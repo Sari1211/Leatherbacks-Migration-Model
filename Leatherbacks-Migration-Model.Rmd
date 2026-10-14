@@ -5,7 +5,6 @@ author: "Fadly Mohammad
 date: "2026-10-14"
 ---
 
-<<<<<<< HEAD
 ## How do increasing temperatures and changing food availability affect leatherback turtle population dynamics and migration routes over time, particularly when turtles can no longer reach their usual nesting areas?
 
 ### Simulating leatherback population persistence, adaptation and migratory routes under climate change over time
@@ -20,35 +19,50 @@ The population is updated over time as adult turtles survive and reproduce, with
 
 #### List of Variables and Parameters
 
-Variable
+###### Variable
 
-Number of adult turtles: Total number of adult turtles at time \
-Turtle location: Location of turtle at time \
-Migration route: Route followed by turtle \
-Nesting destination: Beach the turtle travels to for nesting \
-Food resources: Food availability in ocean region \
-Offspring: Number of offspring produced \
-Juvenile: Number of juveniles of age, before reaching adulthood \
-Ocean temperature: Temperature in ocean region, Climate change over time, Change in temperature over time \
-Resource distribution: Availability and location of food resources \
-Habitat suitability: How suitable an ocean region is for migration or feeding
+- Number of adult turtles: Total number of adult turtles at time \
+- Turtle location: Location of turtle at time \
+- Migration route: Route followed by turtle \
+- Nesting destination: Beach the turtle travels to for nesting \
+- Food resources: Food availability in ocean region \
+- Offspring: Number of offspring produced \
+- Juvenile: Number of juveniles of age, before reaching adulthood \
+- Ocean temperature: Temperature in ocean region, Climate change over time, Change in temperature over time \
+- Resource distribution: Availability and location of food resources \
+- Habitat suitability: How suitable an ocean region is for migration or feeding
 
-Parameter
+###### Parameter
 
-Initial adult population: Number of adults at the start \
-Route fidelity: Probability of following the traditional route \
-Alternative-route probability: Probability of selecting an alternative route \
-Temperature sensitivity: Strength of the effect of temperature on route choice \
-Resource sensitivity: Strength of the effect of food availability on route choice \
-Distance cost: How strongly turtles avoid longer routes \
-Maximum travel distance: Maximum distance turtles can travel \
-Adult survival rate: Probability an adult survives \
-Juvenile survival rate: Probability a juvenile survives \
-Reproduction rate: Average offspring produced per reproductive event \
-Age at maturity: Age at which offspring can join the adult population \
-Climate warming rate: Rate at which temperature increases under a climate scenario \
-Resource-change rate: Rate at which resource availability or distribution changes
-=======
-hello
+- Initial adult population: Number of adults at the start \
+- Route fidelity: Probability of following the traditional route \
+- Alternative-route probability: Probability of selecting an alternative route \
+- Temperature sensitivity: Strength of the effect of temperature on route choice \
+- Resource sensitivity: Strength of the effect of food availability on route choice \
+- Distance cost: How strongly turtles avoid longer routes \
+- Maximum travel distance: Maximum distance turtles can travel \
+- Adult survival rate: Probability an adult survives \
+- Juvenile survival rate: Probability a juvenile survives \
+- Reproduction rate: Average offspring produced per reproductive event \
+- Age at maturity: Age at which offspring can join the adult population \
+- Climate warming rate: Rate at which temperature increases under a climate scenario \
+- Resource-change rate: Rate at which resource availability or distribution changes
 
->>>>>>> 6ce9eb6d41062504dea5d9821049ef1d1229d84d
+```{r}
+# just start somewhere
+
+# I don't have a clue were to start lets start by setting the x-/y-Axes
+xlab = "Temperature with Time"
+ylab = "Migration Path/Population Size/Ressources"
+
+# create your simulation data
+output1 <- simulate_migration-path
+output2 <- simulate_pop
+output3 <- simulate_ressources
+  
+# maybe colour the different lines
+lines(x_range,output[1], col="blue")
+lines(x_range,output[2], col="red")
+lines(x_range,output[3], col="green")
+``` 
+
