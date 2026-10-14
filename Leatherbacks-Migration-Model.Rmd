@@ -1,2 +1,49 @@
-# Leatherbacks Migration Model
+---
+title: "Leatherbacks-Migration-Model"
+author: "Fadly Mohammad
+         Sara Costanzo"
+date: "2026-10-14"
+---
 
+## How do increasing temperatures and changing food availability affect leatherback turtle population dynamics and migration routes over time, particularly when turtles can no longer reach their usual nesting areas?
+
+### Simulating leatherback population persistence, adaptation and migratory routes under climate change over time
+
+In this notebook, we are implementing simulations of leatherback sea turtle (Dermochelys coriacea) primarily migration routes under changing environmental conditions in time with changing temperatures.
+
+The model starts with an initial population of adult turtles that migrate between feeding grounds and nesting beaches. Over time, environmental conditions change as ocean temperatures increase and food resources shift in their distribution and availability. These changes may affect the suitability of existing migration routes and the accessibility of feeding and nesting habitats.
+
+We investigate how this environmental changes influence leatherback migration routes over multiple years, whether alternative routes become more frequently used, and how these changes may affect access to feeding grounds and nesting beaches. Turtles may continue to follow their traditional routes or use alternative routes when their usual feeding grounds become less suitable or when they cannot reach their usual nesting areas. The model considers how temperature, resource availability, migration behaviour and access to suitable habitats influence route choice.
+
+The population is updated over time as adult turtles survive and reproduce, with offspring eventually entering the adult population. Changes in migration routes may influence survival and reproductive success, which can subsequently affect population size and the distribution of migration behaviours.
+
+#### List of Variables and Parameters
+
+Variable
+
+Number of adult turtles: Total number of adult turtles at time \
+Turtle location: Location of turtle at time \
+Migration route: Route followed by turtle \
+Nesting destination: Beach the turtle travels to for nesting \
+Food resources: Food availability in ocean region \
+Offspring: Number of offspring produced \
+Juvenile: Number of juveniles of age, before reaching adulthood \
+Ocean temperature: Temperature in ocean region, Climate change over time, Change in temperature over time \
+Resource distribution: Availability and location of food resources \
+Habitat suitability: How suitable an ocean region is for migration or feeding
+
+Parameter
+
+Initial adult population: Number of adults at the start \
+Route fidelity: Probability of following the traditional route \
+Alternative-route probability: Probability of selecting an alternative route \
+Temperature sensitivity: Strength of the effect of temperature on route choice \
+Resource sensitivity: Strength of the effect of food availability on route choice \
+Distance cost: How strongly turtles avoid longer routes \
+Maximum travel distance: Maximum distance turtles can travel \
+Adult survival rate: Probability an adult survives \
+Juvenile survival rate: Probability a juvenile survives \
+Reproduction rate: Average offspring produced per reproductive event \
+Age at maturity: Age at which offspring can join the adult population \
+Climate warming rate: Rate at which temperature increases under a climate scenario \
+Resource-change rate: Rate at which resource availability or distribution changes
