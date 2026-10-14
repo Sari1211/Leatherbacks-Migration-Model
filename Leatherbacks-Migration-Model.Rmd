@@ -5,6 +5,7 @@ author: "Fadly Mohammad
 date: "2026-10-14"
 ---
 
+<<<<<<< HEAD
 ## How do increasing temperatures and changing food availability affect leatherback turtle population dynamics and migration routes over time, particularly when turtles can no longer reach their usual nesting areas?
 
 ### Simulating leatherback population persistence, adaptation and migratory routes under climate change over time
@@ -47,3 +48,7 @@ Reproduction rate: Average offspring produced per reproductive event \
 Age at maturity: Age at which offspring can join the adult population \
 Climate warming rate: Rate at which temperature increases under a climate scenario \
 Resource-change rate: Rate at which resource availability or distribution changes
+=======
+hello
+
+>>>>>>> 6ce9eb6d41062504dea5d9821049ef1d1229d84d
