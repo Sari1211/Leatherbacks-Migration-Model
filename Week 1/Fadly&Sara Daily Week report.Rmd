@@ -1,0 +1,108 @@
+---
+title: "Week 1 Theroritical Research"
+Author: Fadly Muhammad
+        Sara Costanzo
+output: html_notebook
+---
+
+#### For Several days we've been trying to learn about R, about Github and specifically about modelling
+
+- We feel powerless, especially knowing the fact that making conceptual things isnt just add some variable and parameters
+
+- We try to understand how conceptual of leatherback turlte migration within evolutionary rescue models that have been modelled before by prof claudia
+
+- We also loving the way how everyone open and how the other Phd or postdoct student support us and explain all the conceptual from scratch
+
+- So here are our last progress within our models
+
+## Research Background/Motivation
+
+Sea turtles have **temperature-dependent sex determination (TSD)**: warm nests produce mostly females, and very warm nests have high embryo mortality. On beaches that are warming fast, the "wild-type" nesting behaviour (laying at the usual time, in open sand) produces too few viable hatchlings and males, so the nesting population declines.
+
+A heritable trait could rescue the population, for example **earlier nesting in the season** or **choosing shaded / cooler nest sites**. We call carriers of this trait the adapted type **A**, and the others the wild type **a**.
+
+Female sea turtles show strong **natal homing**: they return to nest on the beach where they hatched. But homing is not perfect, a small fraction **strays** to other beaches. This straying is **migration (gene flow)** between nesting populations.
+
+Our main question are
+
+### **Can gene flow from a cooler beach, where the adapted type already exists, rescue a population on a warming beach? And how does that compare to rescue by new mutation only?**
+
+#### What changed compared to the basic model
+
+| Basic model | This model |
+|:-----------------------------------|:-----------------------------------|
+| One population | Two nesting beaches (patches): **beach 1 = warming beach**, **beach 2 = cooler refuge beach** |
+| One decay rate `decay_rate` | Beach-specific decay rates `r1`, `r2` |
+| One selection coefficient `sel_coeff` | Beach-specific advantage of A: `s1`, `s2` (s2 can be negative = cost of the trait on a cool beach) |
+| Mutation only | Mutation **plus** migration (straying) between beaches: `m12`, `m21` |
+| State = 2 numbers (a, A) | State = 4 numbers (a and A on each beach) |
+| Stop if total ≥ 1.5× or total = 0 | Stop if beach 1 recovers (≥ 1.5× its start size) or **the whole metapopulation** goes extinct |
+
+Simplifications we keep from the original: haploid genetics (no diploidy, no sex ratio explicitly modelled), non-overlapping discrete generations (a sea turtle generation is roughly 25–40 years, so 1 model generation ≈ several decades), Poisson offspring numbers, no density regulation.
+
+#### List of variables and parameters
+
+- N1_a, N1_A current numbers of wild-type and adapted turtles on beach 1 (warming)
+
+- N2_a, N2_A current numbers on beach 2 (cooler refuge)
+
+- r1, r2 decay rate of the wild type on each beach (r1 \> 0: warming beach declines; r2 ≈ 0: refuge is roughly stable)
+
+- s1, s2 advantage of A over a on each beach (s1 \> r1 allows rescue on beach 1; s2 ≤ 0 means the trait is neutral or costly on the cool beach)
+
+- mut_rate mutation rate from a to A (same on both beaches)
+
+- m12 fraction of individuals that stray from beach 1 to beach 2 per generation
+
+- m21 fraction of individuals that stray from beach 2 to beach 1 per generation
+
+- t_max maximum number of generations to simulate
+
+#### Simulate one generation with migration
+
+Life cycle within one generation, in this order:
+
+- Reproduction on each beach (Poisson, as in the basic model, but with beach-specific r and s)
+
+- Mutation a → A on each beach (Poisson)
+
+- Migration: each offspring strays to the other beach with probability m12 or m21. The number of strays is drawn from a binomial distribution (each of N individuals independently strays or not).
+
+```{r}
+simulate_one_gen_mig <- function(N1_a, N1_A, N2_a, N2_A,
+                                 r1, s1, r2, s2,
+                                 mut_rate, m12, m21) {
+  # 1. reproduction on each beach (beach-specific fitness)
+  off1_a <- rpois(1, N1_a * (1 - r1))
+  off1_A <- rpois(1, N1_A * max(1 - r1 + s1, 0))
+  off2_a <- rpois(1, N2_a * (1 - r2))
+  off2_A <- rpois(1, N2_A * max(1 - r2 + s2, 0))  # max() guards against negative expectation if s2 is very negative
+  
+  # 2. mutation a -> A on each beach
+  mut1 <- rpois(1, off1_a * mut_rate)
+  mut2 <- rpois(1, off2_a * mut_rate)
+  mut1 <- min(mut1, off1_a)  # cannot mutate more individuals than exist
+  mut2 <- min(mut2, off2_a)
+  pre1_a <- off1_a - mut1;  pre1_A <- off1_A + mut1
+  pre2_a <- off2_a - mut2;  pre2_A <- off2_A + mut2
+  
+  # 3. migration (straying): binomial draw for each genotype on each beach
+  mig12_a <- rbinom(1, pre1_a, m12)   # wild type leaving beach 1
+  mig12_A <- rbinom(1, pre1_A, m12)   # adapted type leaving beach 1
+  mig21_a <- rbinom(1, pre2_a, m21)   # wild type leaving beach 2
+  mig21_A <- rbinom(1, pre2_A, m21)   # adapted type leaving beach 2
+  
+  # new numbers: stayers + immigrants
+  N1_a_new <- pre1_a - mig12_a + mig21_a
+  N1_A_new <- pre1_A - mig12_A + mig21_A
+  N2_a_new <- pre2_a - mig21_a + mig12_a
+  N2_A_new <- pre2_A - mig21_A + mig12_A
+  
+  return(c(N1_a_new, N1_A_new, N2_a_new, N2_A_new))
+}
+
+# Test: warming beach with 100 wild-type turtles, refuge beach with 90 a and 10 A
+print(simulate_one_gen_mig(100, 0, 90, 10,
+                           r1 = 0.1, s1 = 0.2, r2 = 0, s2 = 0,
+                           mut_rate = 0.001, m12 = 0.02, m21 = 0.02))
+```
