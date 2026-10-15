@@ -21,31 +21,30 @@ The population is updated over time as adult turtles survive and reproduce, with
 
 ###### Variable
 
-- Number of adult turtles: Total number of adult turtles at time \
-- Turtle location: Location of turtle at time \
-- Migration route: Route followed by turtle \
-- Nesting destination: Beach the turtle travels to for nesting \
-- Food resources: Food availability in ocean region \
-- Offspring: Number of offspring produced \
-- Juvenile: Number of juveniles of age, before reaching adulthood \
-- Ocean temperature: Temperature in ocean region, Climate change over time, Change in temperature over time \
-- Resource distribution: Availability and location of food resources \
-- Habitat suitability: How suitable an ocean region is for migration or feeding
+- **Number of juvenile turtles: Total number of juvenile turtles at time**
+- Turtle location: Location of turtle at time  
+- **Migration route: Route followed by turtle**
+- **Nesting destination: Beach the turtle travels to for nesting**
+- Food resources: Food availability in ocean region
+- Offspring: Number of offspring produced
+- Juvenile: Number of juveniles of age, before reaching adulthood
+- **Ocean temperature: Temperature in ocean region, Climate change over time, Change in temperature over time**
+- Resource distribution: Availability and location of food resources
+- **Habitat suitability: How suitable an ocean region is for migration or feeding**
 
 ###### Parameter
 
-- Initial adult population: Number of adults at the start \
-- Route fidelity: Probability of following the traditional route \
-- Alternative-route probability: Probability of selecting an alternative route \
-- Temperature sensitivity: Strength of the effect of temperature on route choice \
-- Resource sensitivity: Strength of the effect of food availability on route choice \
-- Distance cost: How strongly turtles avoid longer routes \
-- Maximum travel distance: Maximum distance turtles can travel \
-- Adult survival rate: Probability an adult survives \
-- Juvenile survival rate: Probability a juvenile survives \
-- Reproduction rate: Average offspring produced per reproductive event \
-- Age at maturity: Age at which offspring can join the adult population \
-- Climate warming rate: Rate at which temperature increases under a climate scenario \
+- Initial adult population: Number of adults at the start
+- **Route fidelity: Probability of following the traditional route**
+- **Alternative-route probability: Probability of selecting an alternative route**
+- **Temperature sensitivity: Strength of the effect of temperature on route choice, Climate warming rate: Rate at which temperature increases under a climate scenario**
+- Resource sensitivity: Strength of the effect of food availability on route choice
+- *Distance cost: How strongly turtles avoid longer routes ?? maybe*
+- **Maximum travel distance: Maximum distance turtles can travel**
+- Adult survival rate: Probability an adult survives
+- **Juvenile survival rate: Probability a juvenile survives**
+- Reproduction rate: Average offspring produced per reproductive event
+- Age at maturity: Age at which offspring can join the adult population
 - Resource-change rate: Rate at which resource availability or distribution changes
 
 ```{r}
@@ -64,5 +63,4 @@ output3 <- simulate_ressources
 lines(x_range,output[1], col="blue")
 lines(x_range,output[2], col="red")
 lines(x_range,output[3], col="green")
-``` 
-
+```
