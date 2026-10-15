@@ -51,7 +51,7 @@ The population is updated over time as adult turtles survive and reproduce, with
 ```{r}
 # just start somewhere
 
-# I don't have a clue were to start lets start by setting the x-/y-Axes
+# I don't have a clue where to start lets start by setting the x-/y-Axes
 xlab = "Temperature with Time"
 ylab = "Migration Path/Population Size/Ressources"
 
