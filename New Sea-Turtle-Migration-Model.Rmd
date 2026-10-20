@@ -5,41 +5,106 @@ output: html_notebook
 
 | Code         | Meaning in the Sea-Turtle Model                              |
 |--------------|--------------------------------------------------------------|
-| `N_a`        | Number of usual-type turtles on the warming beach            |
-| `N_A`        | Number of adapted-type turtles on the warming beach          |
+| `Wb_a`       | Number of local turtles on the warming beach                 |
+| `WB_A`       | Number of adapted-type turtles on the warming beach          |
 | `decay_rate` | Negative effect of warming on expected population growth     |
-| `sel_coeff`  | Relative ad               |
+| `sel_coeff`  | Relative growth advantage of the adapted type                |
 | `mut_rate`   | Rate at which the adapted type arises through new mutations  |
 | `mig_rate`   | Rate of arrival of adapted individuals from the cooler beach |
+| `Cb_source_a`| Size of migrating source population                          |
       
+      
+Simulate One Generation
+
+Szenario	sel_coeff	Wirkung von Typ A am wärmenden Strand
+Good	0.2	A has a Fitness advantage
+Neutral	0	A hat no Fitness advantage nor disatvantage
+Bad	-0.05	A has a Fitness disatvantage
 
 ```{r}
-simulate_one_gen <- function(N_a, N_A, decay_rate, sel_coeff, mut_rate,
-                             mig_rate = 0) {
+simulate_one_gen <- function(Wb_a, WB_A, decay_rate, sel_coeff, mut_rate,
+                             mig_rate = 0, Cb_source_a = 0) {
+#Simuliert eine Generation. a ist der gewöhnliche, A der angepasste Schildkrötentyp.
+  
+  
   # Draw offspring according to Poisson distributions
-  offsp_a <- rpois(1, N_a * (1-decay_rate))
-  offsp_A <- rpois(1, N_A * (1-decay_rate+sel_coeff))
+  #rpois() erzeugt zufällige Nachkommenzahlen. Typ a hat einen Nachteil, Typ A einen Fitnessvorteil.
+  offsp_a <- rpois(1, Wb_a * (1-decay_rate))
+  offsp_A <- rpois(1, WB_A * (1-decay_rate+sel_coeff))
 
-  # Draw new mutants from the wild-type offspring
+  # Draw new mutants from the wild-type offspring mut_a_to_A: gewöhnliche Nachkommen, die durch Mutation zu A werden.mig_A: angepasste Schildkröten, die vom kühleren Strand einwandern.
   mut_a_to_A <- rpois(1, offsp_a * mut_rate)
 
   # Draw adapted immigrants arriving from the cooler source beach
-  mig_A <- rpois(1, N_source_a * mig_rate)
+  mig_a <- rpois(1, Cb_source_a * mig_rate)
 
-  # Determine population sizes in the next generation
-  N_a_new <- max(offsp_a - mut_a_to_A, 0)
-  N_A_new <- offsp_A + mut_a_to_A + mig_A
+  # Determine population sizes in the next generation. Wir ziehen die Mutanten von a ab und addieren sie zu A. Eingewanderte A werden ebenfalls hinzugefügt.
+  Wb_a_new <- max(offsp_a - mut_a_to_A, 0)
+  WB_A_new <- offsp_A + mut_a_to_A + mig_a
 
   # Return wild-type and adapted population sizes
-  return(c(N_a_new, N_A_new))
+  return(c(Wb_a_new, WB_A_new))
 }
 
 # Test the function with mutation only (migration defaults to zero)
-print(simulate_one_gen(100, 0, 0.1, 0.2, 0.01))
+print(simulate_one_gen(100, 100, 0.1, 0.2, 0.01))
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+Simulate a population trajectory
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+```{r}
+simulate_pop <- function(N_init_a, N_init_A, decay_rate, sel_coeff, mut_rate, t_max, mig_rate = 0, N_source_A = 0) {
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+# Store the initial population and initiate the current population
+  pop_vector <- c(N_init_a, N_init_A)
+  pop_new <- c(N_init_a, N_init_A)
+
+  # Run the simulation for up to t_max generations
+  for (i in 1:t_max) {
+    # Simulate one generation later
+    pop_new <- simulate_one_gen(pop_new[1], pop_new[2], decay_rate,
+                                sel_coeff, mut_rate, mig_rate, N_source_A)
+
+    # Add the new population sizes to the output
+    pop_vector <- rbind(pop_vector, pop_new)
+
+    # Stop if the population recovers or goes extinct
+    if (pop_new[1] + pop_new[2] >= 1.5 * (N_init_a + N_init_A) ||
+        pop_new[1] + pop_new[2] == 0) break
+  }
+
+  # Label the rows by generation and the columns by type
+  rownames(pop_vector) <- 0:(nrow(pop_vector) - 1)
+  colnames(pop_vector) <- c("a", "A")
+
+  return(pop_vector)
+}
+
+# Set parameters for one example trajectory
+max_gen <- 1000
+init_a <- 100
+init_A <- 0
+decay_rate <- 0.1
+sel_coeff <- 0.2
+mut_rate <- 0.001
+N_source_A <- 100
+
+# Example with gene flow from the cooler source beach
+output <- simulate_pop(init_a, init_A, decay_rate, sel_coeff, mut_rate,
+                       max_gen, mig_rate = 0.005, N_source_A = N_source_A)
+
+# Show the final few rows of the simulated population
+print(tail(output))
+
+# Plot the total population and the two types
+x_range <- 0:(nrow(output) - 1)
+plot(x_range, rowSums(output), type = "l",
+     ylim = c(0, max(rowSums(output))),
+     xlab = "Generation", ylab = "Population size",
+     main = "Example trajectory on the warming beach")
+lines(x_range, output[, "a"], col = "blue")
+lines(x_range, output[, "A"], col = "red")
+legend("topleft", legend = c("Total population", "Usual type a", "Adapted type A"),
+       col = c("black", "blue", "red"), lty = 1, bty = "n")
+```
+
