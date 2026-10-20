@@ -1,0 +1,45 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+| Code         | Meaning in the Sea-Turtle Model                              |
+|--------------|--------------------------------------------------------------|
+| `N_a`        | Number of usual-type turtles on the warming beach            |
+| `N_A`        | Number of adapted-type turtles on the warming beach          |
+| `decay_rate` | Negative effect of warming on expected population growth     |
+| `sel_coeff`  | Relative ad               |
+| `mut_rate`   | Rate at which the adapted type arises through new mutations  |
+| `mig_rate`   | Rate of arrival of adapted individuals from the cooler beach |
+      
+
+```{r}
+simulate_one_gen <- function(N_a, N_A, decay_rate, sel_coeff, mut_rate,
+                             mig_rate = 0) {
+  # Draw offspring according to Poisson distributions
+  offsp_a <- rpois(1, N_a * (1-decay_rate))
+  offsp_A <- rpois(1, N_A * (1-decay_rate+sel_coeff))
+
+  # Draw new mutants from the wild-type offspring
+  mut_a_to_A <- rpois(1, offsp_a * mut_rate)
+
+  # Draw adapted immigrants arriving from the cooler source beach
+  mig_A <- rpois(1, N_source_a * mig_rate)
+
+  # Determine population sizes in the next generation
+  N_a_new <- max(offsp_a - mut_a_to_A, 0)
+  N_A_new <- offsp_A + mut_a_to_A + mig_A
+
+  # Return wild-type and adapted population sizes
+  return(c(N_a_new, N_A_new))
+}
+
+# Test the function with mutation only (migration defaults to zero)
+print(simulate_one_gen(100, 0, 0.1, 0.2, 0.01))
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
