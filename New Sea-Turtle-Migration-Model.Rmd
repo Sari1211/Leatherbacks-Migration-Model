@@ -3,27 +3,22 @@ title: "R Notebook"
 output: html_notebook
 ---
 
-| Code         | Meaning in the Sea-Turtle Model                              |
-|--------------|--------------------------------------------------------------|
-| `Wb_a`       | Number of local turtles on the warming beach                 |
-| `WB_A`       | Number of adapted-type turtles on the warming beach          |
-| `decay_rate` | Negative effect of warming on expected population growth     |
-| `sel_coeff`  | Relative growth advantage of the adapted type                |
-| `mut_rate`   | Rate at which the adapted type arises through new mutations  |
-| `mig_rate`   | Rate of arrival of adapted individuals from the cooler beach |
-| `Cb_source_a`| Size of migrating source population                          |
-      
-      
+| Code | Meaning in the Sea-Turtle Model |
+|------------------|------------------------------------------------------|
+| `Wb_a` | Number of local turtles on the warming beach |
+| `WB_A` | Number of adapted-type turtles on the warming beach |
+| `decay_rate` | Negative effect of warming on expected population growth |
+| `sel_coeff` | Relative growth advantage of the adapted type |
+| `mut_rate` | Rate at which the adapted type arises through new mutations |
+| `mig_rate` | Rate of arrival of adapted individuals from the cooler beach |
+| `Cb_source_a` | Size of migrating source population |
+
 Simulate One Generation
 
-Szenario	sel_coeff	Wirkung von Typ A am wärmenden Strand
-Good	0.2	A has a Fitness advantage
-Neutral	0	A hat no Fitness advantage nor disatvantage
-Bad	-0.05	A has a Fitness disatvantage
+Szenario sel_coeff Wirkung von Typ A am wärmenden Strand Good 0.2 A has a Fitness advantage Neutral 0 A hat no Fitness advantage nor disatvantage Bad -0.05 A has a Fitness disatvantage
 
 ```{r}
-simulate_one_gen <- function(Wb_a, WB_A, decay_rate, sel_coeff, mut_rate,
-                             mig_rate = 0, Cb_source_a = 0) {
+simulate_one_gen <- function(Wb_a, WB_A, decay_rate, sel_coeff, mut_rate, mig_rate = 0, Cb_source_a = 0) {
 #Simuliert eine Generation. a ist der gewöhnliche, A der angepasste Schildkrötentyp.
   
   
@@ -107,4 +102,3 @@ lines(x_range, output[, "A"], col = "red")
 legend("topleft", legend = c("Total population", "Usual type a", "Adapted type A"),
        col = c("black", "blue", "red"), lty = 1, bty = "n")
 ```
-
