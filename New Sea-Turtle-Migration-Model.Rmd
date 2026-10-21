@@ -30,7 +30,7 @@ output: html_notebook
 # 4. Immigration of adapted individuals from a source beach
 # 5. Population growth affected by warming
 
-simulate_one_gen <- function(N_a, N_A, decay_rate, sel_coeff, mut_rate, mig_rate = 0, Cb_source_a = 0, carrying_capacity = 10000) {
+simulate_one_gen <- function(N_a, N_A, decay_rate, sel_coeff, mut_rate, mig_rate = 0, N_source_a = 0, carrying_capacity = 10000) {
   
   # ====STEP 1: Generate offspring for each turtle type
   
@@ -65,7 +65,7 @@ simulate_one_gen <- function(N_a, N_A, decay_rate, sel_coeff, mut_rate, mig_rate
   # Generate the number of adapted individuals arriving from the cooler source beach.
   # source population size and the migration rate.
   
-  mig_A <- rpois(1, Cb_source_a * mig_rate)
+  mig_A <- rpois(1, N_source_a * mig_rate)
   
   # ====STEP 4: Calculate population sizes in the next generation
   # Subtract individuals that mutated from type a.
@@ -87,7 +87,7 @@ simulate_one_gen <- function(N_a, N_A, decay_rate, sel_coeff, mut_rate, mig_rate
   
 }
 
-print(simulate_one_gen(100,100,0.2,0,0.5))
+print(simulate_one_gen(100,100,0.2,0,0.0001))
 
 ```
 
@@ -125,7 +125,7 @@ simulate_pop <- function(N_init_a, N_init_A, decay_rate, sel_coeff,
     gen_result <- simulate_one_gen(
       pop_new[1], pop_new[2], decay_rate,
       sel_coeff, mut_rate, mig_rate = 0,
-      Cb_source_a = 0
+      N_source_a = 0
     )
     #print(gen_result)
     # Keep only the two population counts
@@ -157,19 +157,19 @@ simulate_pop <- function(N_init_a, N_init_A, decay_rate, sel_coeff,
 
 # Define baseline model parameters
 
-N_init_a <- 50
-N_init_A <- 50
+N_init_a <- 100
+N_init_A <- 0
 N_source_A <- 100
 decay_rate <- 0.01
 sel_coeff <- 0.2
-mut_rate <- 0.001
+mut_rate <- 0.0001
 t_max <- 1000
 mig_rate <- 0.5
 
 output <- simulate_pop(N_init_a, N_init_A, decay_rate, sel_coeff, mut_rate, t_max, mig_rate, N_source_A)
 
 # Run simulations for different migration rates
-mig_rates <- seq(0, 0.05, by = 0.5)
+mig_rates <- seq(0, 0.05, by = 0.01)
 
 # Number of simulations for each migration rate
 n_replicates <- 100
@@ -187,13 +187,12 @@ for (j in seq_along(mig_rates)) {
   
   for (r in seq_len(n_replicates)) {
     
-    output <- simulate_pop(
-      N_init_a, N_init_A, decay_rate, sel_coeff,
-      mut_rate, t_max,
-      mig_rate = mig_rates[j],
-      N_source_A = N_source_A
-    )
-    
+  output <- simulate_pop(
+  N_init_a, N_init_A, decay_rate, sel_coeff,
+  mut_rate, t_max,
+  mig_rate = 0.05,
+  N_source_A = N_source_A
+)
     # Calculate total population on the warming beach
     home_total <- output[, "a"] + output[, "A"]
     
