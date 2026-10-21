@@ -4,7 +4,7 @@ output: html_notebook
 ---
 
 | Code | Meaning in the Sea-Turtle Model |
-|----|----|
+|------------------------------------|------------------------------------|
 | `N_a` | Number of local turtles on the warming beach |
 | `N_A` | Number of adapted-type turtles on the warming beach |
 | `decay_rate` | Negative effect of warming on expected population growth |
@@ -94,20 +94,29 @@ print(simulate_one_gen(100,100,0.2,0,0.5))
 # Simulate a population trajectory
 
 ```{r}
+# Define a function that simulates the population over several generations.
+
 simulate_pop <- function(N_init_a, N_init_A, decay_rate, sel_coeff,
                          mut_rate, t_max, mig_rate,
                          N_source_A) {
   
-  # Store initial populations
-  pop_new <- c(N_init_a, N_init_A)
-  source_new <- N_source_A 
+ # Store the initial numbers of non-adapted and adapted turtles on the warming beach in a vector.
+  # pop_new[1] represents the number of a individuals.
+  # pop_new[2] represents the number of A individuals.
   
-  pop_vector <- matrix(c(pop_new, source_new), nrow = 1)
+  pop_new <- c(N_init_a, N_init_A)
+  
+  pop_vector <- matrix(c(pop_new), nrow = 1)
+  
+# Repeat the simulation once for each generation, up to the maximum number of generations specified by t_max.
   
   for (i in 1:t_max) {
     
     # Migration and survival combined into one step
     # mig_rate = probability of successful migration
+    
+#the source population itself is not reduced here. N_source_A remains fixed, so it acts as a constant reservoir that can supply adapted turtles in every generation.
+    
     migrants <- rbinom(1, N_source_A, mig_rate)
     
     # Original function: simulate the warming beach
@@ -130,36 +139,37 @@ simulate_pop <- function(N_init_a, N_init_A, decay_rate, sel_coeff,
     pop_new[2] <- pop_new[2] + migrants
     
     # Save all populations
-    pop_vector <- rbind(pop_vector, c(pop_new, source_new))
+    pop_vector <- rbind(pop_vector, c(pop_new))
     
     #print(c(pop_new, source_new,i))
     
     # Stop if the warming population recovers or the
     # whole system becomes extinct
     if (sum(pop_new) >= 1.5 * (N_init_a + N_init_A) ||
-        sum(c(pop_new, source_new)) == 0) break
+        sum(c(pop_new)) == 0) break
   }
   
   rownames(pop_vector) <- 0:(nrow(pop_vector) - 1)
-  colnames(pop_vector) <- c("a", "A", "source_A")
+  colnames(pop_vector) <- c("a", "A")
   
   return(pop_vector)
 }
 
 # Define baseline model parameters
 
-N_init_a <- 100
-N_init_A <- 100
-N_source_A <- 200
-decay_rate <- 0.5
+N_init_a <- 50
+N_init_A <- 50
+N_source_A <- 100
+decay_rate <- 0.01
 sel_coeff <- 0.2
 mut_rate <- 0.001
-t_max <- 10
+t_max <- 1000
+mig_rate <- 0.5
 
-output <- simulate_pop(N_init_a = 100, N_init_A =100, decay_rate = 0.5, sel_coeff = 0.2, mut_rate = 0.001, t_max = 10, mig_rate = 0,N_source_A = 200)
+output <- simulate_pop(N_init_a, N_init_A, decay_rate, sel_coeff, mut_rate, t_max, mig_rate, N_source_A)
 
 # Run simulations for different migration rates
-mig_rates <- seq(0, 0.05, by = 0.005)
+mig_rates <- seq(0, 0.05, by = 0.5)
 
 # Number of simulations for each migration rate
 n_replicates <- 100
