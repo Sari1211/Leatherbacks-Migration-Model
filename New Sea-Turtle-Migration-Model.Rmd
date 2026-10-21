@@ -44,8 +44,10 @@ simulate_one_gen <- function(N_a, N_A, decay_rate, sel_coeff, mut_rate, mig_rate
   # Draw offspring according to Poisson distributions
   # rpois(1, lambda) draws one random value from a Poisson
   # distribution with expected value lambda.
+
   offsp_a <- rpois(1, N_a * (1-decay_rate) * density_factor)
   offsp_A <- rpois(1, N_A * (1-decay_rate+sel_coeff) * density_factor)
+  
   
   # sel_coeff represents the relative growth advantage
   # of the adapted type.
@@ -78,24 +80,24 @@ simulate_one_gen <- function(N_a, N_A, decay_rate, sel_coeff, mut_rate, mig_rate
   
   N_A_new <- offsp_A + mut_a_to_A + mig_A
   
-  print(simulate_one_gen(100, 100, 0.1, 0.2, 0.01))
+  return(c(N_a_new, N_A_new))
   
 }
 
-# Test the function with mutation only (migration defaults to zero)
-# Example: simulate one generation with mutation but no migration
+print(simulate_one_gen(100,100,0.2,0,0.5))
+
 ```
 
 # Simulate a population trajectory
 
 ```{r}
 simulate_pop <- function(N_init_a, N_init_A, decay_rate, sel_coeff,
-                         mut_rate, t_max, mig_rate = 0,
-                         N_source_A = 0) {
+                         mut_rate, t_max, mig_rate,
+                         N_source_A) {
   
   # Store initial populations
   pop_new <- c(N_init_a, N_init_A)
-  source_new <- N_source_A
+  source_new <- N_source_A 
   
   pop_vector <- matrix(c(pop_new, source_new), nrow = 1)
   
@@ -113,18 +115,21 @@ simulate_pop <- function(N_init_a, N_init_A, decay_rate, sel_coeff,
       sel_coeff, mut_rate, mig_rate = 0,
       Cb_source_a = 0
     )
-    
+    print(gen_result)
     # Keep only the two population counts
     pop_new <- c(
       unname(gen_result["N_a"]),
       unname(gen_result["N_A"])
     )
     
+    print(pop_new)
     # Add successful migrants to adapted type A
     pop_new[2] <- pop_new[2] + migrants
     
     # Save all populations
     pop_vector <- rbind(pop_vector, c(pop_new, source_new))
+    
+    print(c(pop_new, source_new,i))
     
     # Stop if the warming population recovers or the
     # whole system becomes extinct
@@ -139,14 +144,8 @@ simulate_pop <- function(N_init_a, N_init_A, decay_rate, sel_coeff,
 }
 
 
-# Set parameters
-max_gen <- 1000
-init_a <- 100
-init_A <- 0
-decay_rate <- 0.1
-sel_coeff <- 0.2
-mut_rate <- 0.001
-N_source_A <- 100
+
+output <- simulate_pop(N_init_a = 1000, N_init_A =1000, decay_rate = 0.5, sel_coeff = 1.5, mut_rate = 0.5, t_max = 0, mig_rate = 0,N_source_A = 2000)
 
 # Run simulations for different migration rates
 mig_rates <- seq(0, 0.05, by = 0.005)
@@ -205,6 +204,25 @@ plot(
   ylab = "Probability of adaptation",
   main = "Probability of Adaptation vs Migration Rate"
 )
+
+
+# Test the function and plot the result
+# set t_max to a value to be used througout
+max_gen <- 1000
+# create your simulation data
+output <- simulate_pop(N_init_a = 1000, N_init_A =1000, decay_rate = 0.5, sel_coeff = 1.5, mut_rate = 0.5, t_max = 0, mig_rate = 0,N_source_A = 0)
+# show the last few lines of the data table
+print(tail(output))
+# plot the output - note that the plot range and the x axis have to be adjusted based on the length of the table
+# determine x axis range 
+x_range <- 0:(length(output[,1])-1)
+# this plots the total population size
+plot(x_range,output[,1]+output[,2],type='l',ylim=c(0,max(output[,1]+output[,2])),xlab = "Generation",ylab = "Population size")
+# add number of wild type individuals
+lines(x_range,output[,1], col="blue")
+# add number of mutant individuals
+lines(x_range,output[,2], col="red")
+
 ```
 
 # Total population size and frequencies
