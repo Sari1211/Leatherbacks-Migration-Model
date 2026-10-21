@@ -4,7 +4,7 @@ output: html_notebook
 ---
 
 | Code | Meaning in the Sea-Turtle Model |
-|----|----|
+|------------------------------------|------------------------------------|
 | `N_a` | Number of local turtles on the warming beach |
 | `N_A` | Number of adapted-type turtles on the warming beach |
 | `decay_rate` | Negative effect of warming on expected population growth |
@@ -12,13 +12,13 @@ output: html_notebook
 | `mut_rate` | Rate at which the adapted type arises through new mutations |
 | `mig_rate` | Rate of arrival of adapted individuals from the cooler beach |
 | `Cb_source_a` | Size of migrating source population |
+| K | Carrying capacity |
 
 Simulate One Generation
 
 Szenario sel_coeff Wirkung von Typ A am wärmenden Strand Good 0.2 A has a Fitness advantage Neutral 0 A hat no Fitness advantage nor disatvantage Bad -0.05 A has a Fitness disatvantage
 
 ```{r}
-
 # ==== FUNCTION 1: SIMULATE ONE GENERATION
 
 # Two turtle types are represented:
@@ -30,6 +30,7 @@ Szenario sel_coeff Wirkung von Typ A am wärmenden Strand Good 0.2 A has a Fitne
 # 2. A relative growth advantage or disadvantage for type A
 # 3. Mutation from type a to type A
 # 4. Immigration of adapted individuals from a source beach
+# 5. Population growth affected by warming
 
 simulate_one_gen <- function(N_a, N_A, decay_rate, sel_coeff, mut_rate, mig_rate = 0, Cb_source_a = 0 ) {
 
@@ -77,20 +78,6 @@ simulate_one_gen <- function(N_a, N_A, decay_rate, sel_coeff, mut_rate, mig_rate
   
   N_A_new <- offsp_A + mut_a_to_A + mig_A
   
-# Calculate total local population
-N_total <- N_a_new + N_A_new
-
-# Calculate frequencies
-freq_a <- if (N_total > 0) {
-  N_a_new / N_total
-} else {
-  NA
-}
-
-freq_A <- if (N_total > 0) {
-  N_A_new / N_total
-} else {
-  NA
 }
 
 # Return wild-type and adapted population sizes 
@@ -109,10 +96,11 @@ return(c(
 
 # Test the function with mutation only (migration defaults to zero)
 # Example: simulate one generation with mutation but no migration.
-
-print(simulate_one_gen(100, 100, 0.1, 0.2, 0.01))
 ```
 
+```{r}
+print(simulate_one_gen(100, 100, 0.1, 0.2, 0.01))
+```
 
 Simulate a population trajectory
 
@@ -191,7 +179,7 @@ N_source_A <- 100
 # NEW: Parameters for carrying capacity and migration mortality
 K <- 500
 growth_ref <- 0.5
-mig_cost <- 0.2
+mig_cost <- 0.2 xxxxxxxx
 
 # Run simulation
 output <- simulate_pop(
@@ -228,112 +216,97 @@ legend("topleft",
        lty = 1, bty = "n")
 ```
 
-simulate_pop <- function(N_init_a, N_init_A, decay_rate, sel_coeff,
-                         mut_rate, t_max, mig_rate = 0,
-                         N_source_A = 0, mig_cost = 0.2,
-                         growth_ref = 0.5, K = 500) {
+simulate_pop \<- function(N_init_a, N_init_A, decay_rate, sel_coeff, mut_rate, t_max, mig_rate = 0, N_source_A = 0, mig_cost = 0.2, growth_ref = 0.5, K = 500) {
 
-  # Store initial populations
-  pop_new <- c(N_init_a, N_init_A)
-  source_new <- N_source_A
+\# Store initial populations pop_new \<- c(N_init_a, N_init_A) source_new \<- N_source_A
 
-  pop_vector <- matrix(c(pop_new, source_new), nrow = 1)
+pop_vector \<- matrix(c(pop_new, source_new), nrow = 1)
 
-  for (i in 1:t_max) {
+for (i in 1:t_max) {
 
-    # NEW: Reproduction on the source beach with carrying capacity K
-    source_growth <- (1 + growth_ref) /
-      (1 + growth_ref * source_new / K)
+```         
+# NEW: Reproduction on the source beach with carrying capacity K
+source_growth <- (1 + growth_ref) /
+  (1 + growth_ref * source_new / K)
 
-    offsp_source <- rpois(1, source_new * source_growth)
+offsp_source <- rpois(1, source_new * source_growth)
 
-    # NEW: Migration and migration mortality
-    mig_attempts <- rbinom(1, offsp_source, mig_rate)
+# NEW: Migration and migration mortality
+mig_attempts <- rbinom(1, offsp_source, mig_rate)
 
-    mig_survived <- rbinom(
-      1, mig_attempts, 1 - mig_cost
-    )
-
-    # Update source population after migration
-    source_new <- offsp_source - mig_attempts
-
-    # Original function: simulate the warming beach
-    # Migration is set to zero here because we add surviving
-    # migrants separately below.
-  gen_result <- simulate_one_gen(
-  pop_new[1], pop_new[2], decay_rate,
-  sel_coeff, mut_rate, mig_rate = 0,
-  Cb_source_a = 0
+mig_survived <- rbinom(
+  1, mig_attempts, 1 - mig_cost
 )
+
+# Update source population after migration
+source_new <- offsp_source - mig_attempts
+
+# Original function: simulate the warming beach
+# Migration is set to zero here because we add surviving
+# migrants separately below.
+```
+
+gen_result \<- simulate_one_gen( pop_new[1], pop_new[2], decay_rate, sel_coeff, mut_rate, mig_rate = 0, Cb_source_a = 0 )
 
 # Keep only the two population counts
-pop_new <- c(
-  unname(gen_result["N_a"]),
-  unname(gen_result["N_A"])
-)
-    # NEW: Add surviving immigrants to adapted type A
-    pop_new[2] <- pop_new[2] + mig_survived
 
-    # Save all populations
-    pop_vector <- rbind(pop_vector, c(pop_new, source_new))
+pop_new \<- c( unname(gen_result["N_a"]), unname(gen_result["N_A"]) ) \# NEW: Add surviving immigrants to adapted type A pop_new[2] \<- pop_new[2] + mig_survived
 
-    # Stop if the warming population recovers or the whole system
-    # becomes extinct
-    if (sum(pop_new) >= 1.5 * (N_init_a + N_init_A) ||
-        sum(c(pop_new, source_new)) == 0) break
-  }
+```         
+# Save all populations
+pop_vector <- rbind(pop_vector, c(pop_new, source_new))
 
-  rownames(pop_vector) <- 0:(nrow(pop_vector) - 1)
-  colnames(pop_vector) <- c("a", "A", "source_A")
+# Stop if the warming population recovers or the whole system
+# becomes extinct
+if (sum(pop_new) >= 1.5 * (N_init_a + N_init_A) ||
+    sum(c(pop_new, source_new)) == 0) break
+```
 
-  return(pop_vector)
 }
 
+rownames(pop_vector) \<- 0:(nrow(pop_vector) - 1) colnames(pop_vector) \<- c("a", "A", "source_A")
+
+return(pop_vector) }
 
 # Set parameters
-max_gen <- 1000
-init_a <- 100
-init_A <- 0
-decay_rate <- 0.1
-sel_coeff <- 0.2
-mut_rate <- 0.001
-N_source_A <- 100
+
+max_gen \<- 1000 init_a \<- 100 init_A \<- 0 decay_rate \<- 0.1 sel_coeff \<- 0.2 mut_rate \<- 0.001 N_source_A \<- 100
 
 # NEW: Parameters for carrying capacity and migration mortality
-K <- 500
-growth_ref <- 0.5
-mig_cost <- 0.2
+
+K \<- 500 growth_ref \<- 0.5 mig_cost \<- 0.2
 
 # Run simulation
-output <- simulate_pop(
-  init_a, init_A, decay_rate, sel_coeff,
-  mut_rate, max_gen,
-  mig_rate = 0.005,
-  N_source_A = N_source_A,
-  mig_cost = mig_cost,
-  growth_ref = growth_ref,
-  K = K
-)
+
+output \<- simulate_pop( init_a, init_A, decay_rate, sel_coeff, mut_rate, max_gen, mig_rate = 0.005, N_source_A = N_source_A, mig_cost = mig_cost, growth_ref = growth_ref, K = K )
 
 print(tail(output))
 
 # Plot population trajectories
-x_range <- 0:(nrow(output) - 1)
 
-home_total <- output[, "a"] + output[, "A"]
+x_range \<- 0:(nrow(output) - 1)
 
-plot(x_range, home_total, type = "l",
-     ylim = c(0, max(output)),
-     xlab = "Generation",
-     ylab = "Population size",
-     main = "Sea-turtle population trajectory")
+home_total \<- output[, "a"] + output[, "A"]
 
-lines(x_range, output[, "a"], col = "blue")
-lines(x_range, output[, "A"], col = "red")
-lines(x_range, output[, "source_A"], col = "darkgreen")
+plot(x_range, home_total, type = "l", ylim = c(0, max(output)), xlab = "Generation", ylab = "Population size", main = "Sea-turtle population trajectory")
 
-legend("topleft",
-       legend = c("Total warming beach", "Usual type a",
-                  "Adapted type A", "Source beach"),
-       col = c("black", "blue", "red", "darkgreen"),
-       lty = 1, bty = "n")
+lines(x_range, output[, "a"], col = "blue") lines(x_range, output[, "A"], col = "red") lines(x_range, output[, "source_A"], col = "darkgreen")
+
+legend("topleft", legend = c("Total warming beach", "Usual type a", "Adapted type A", "Source beach"), col = c("black", "blue", "red", "darkgreen"), lty = 1, bty = "n")
+
+```{r}
+# Calculate total local population
+N_total <- N_a_new + N_A_new
+
+# Calculate frequencies
+freq_a <- if (N_total > 0) {
+  N_a_new / N_total
+} else {
+  NA
+}
+
+freq_A <- if (N_total > 0) {
+  N_A_new / N_total
+} else {
+  NA
+```
