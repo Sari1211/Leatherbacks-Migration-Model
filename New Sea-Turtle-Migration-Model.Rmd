@@ -4,7 +4,7 @@ output: html_notebook
 ---
 
 | Code | Meaning in the Sea-Turtle Model |
-|------------------------------------|------------------------------------|
+|----|----|
 | `N_a` | Number of local turtles on the warming beach |
 | `N_A` | Number of adapted-type turtles on the warming beach |
 | `decay_rate` | Negative effect of warming on expected population growth |
@@ -250,7 +250,6 @@ abline(h = recovery_threshold, col = "darkgreen", lty = 2)
 par(mfrow = c(1, 1))
 
 ```
-
 
 # Total population size and frequencies
 
