@@ -169,7 +169,7 @@ mig_rate <- 0.5
 output <- simulate_pop(N_init_a, N_init_A, decay_rate, sel_coeff, mut_rate, t_max, mig_rate, N_source_A)
 
 # Run simulations for different migration rates
-mig_rates <- seq(0, 0.05, by = 0.01)
+mig_rates <- seq(0, 0.01, by = 0.001)
 
 # Number of simulations for each migration rate
 n_replicates <- 100
@@ -190,7 +190,7 @@ for (j in seq_along(mig_rates)) {
   output <- simulate_pop(
   N_init_a, N_init_A, decay_rate, sel_coeff,
   mut_rate, t_max,
-  mig_rate = 0.05,
+  mig_rate = mig_rates[j],
   N_source_A = N_source_A
 )
     # Calculate total population on the warming beach
