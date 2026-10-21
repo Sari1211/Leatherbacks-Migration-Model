@@ -14,9 +14,7 @@ output: html_notebook
 | `Cb_source_a` | Size of migrating source population |
 | K | Carrying capacity |
 
-Simulate One Generation
-
-Szenario sel_coeff Wirkung von Typ A am wärmenden Strand Good 0.2 A has a Fitness advantage Neutral 0 A hat no Fitness advantage nor disatvantage Bad -0.05 A has a Fitness disatvantage
+# Simulate One Generation
 
 ```{r}
 # ==== FUNCTION 1: SIMULATE ONE GENERATION
@@ -32,137 +30,111 @@ Szenario sel_coeff Wirkung von Typ A am wärmenden Strand Good 0.2 A has a Fitne
 # 4. Immigration of adapted individuals from a source beach
 # 5. Population growth affected by warming
 
-simulate_one_gen <- function(N_a, N_A, decay_rate, sel_coeff, mut_rate, mig_rate = 0, Cb_source_a = 0 ) {
-
-# ====STEP 1: Generate offspring for each turtle type
-
-# Generate the number of offspring from type a.
-# The expected number is reduced by the warming effect
-# represented by decay_rate. 
-
+simulate_one_gen <- function(N_a, N_A, decay_rate, sel_coeff, mut_rate, mig_rate = 0, Cb_source_a = 0, carrying_capacity = 1000) {
   
-
-# Draw offspring according to Poisson distributions
+  # ====STEP 1: Generate offspring for each turtle type
+  
+  # Generate the number of type-a offspring.
+  # The expected number is reduced by the warming effect
+  # represented by decay_rate.
+  
+  # NEW: Carrying capacity limits population growth
+  density_factor <- max(1 - (N_a + N_A) / carrying_capacity, 0)
+  
+  # Draw offspring according to Poisson distributions
   # rpois(1, lambda) draws one random value from a Poisson
   # distribution with expected value lambda.
-  offsp_a <- rpois(1, N_a * (1-decay_rate))
-  offsp_A <- rpois(1, N_A * (1-decay_rate+sel_coeff))
-# sel_coeff represents the relative growth advantage
-# or disadvantage of the adapted type.
-# A positive sel_coeff increases its expected growth,
-# while a negative value decreases its expected growth.
-
-# ====STEP 2: Simulate mutation from type a to type A
+  offsp_a <- rpois(1, N_a * (1-decay_rate) * density_factor)
+  offsp_A <- rpois(1, N_A * (1-decay_rate+sel_coeff) * density_factor)
   
-# Estimate the number of type-a offspring that mutate   
-# Number of type-a offspring * mutation rate.
+  # sel_coeff represents the relative growth advantage
+  # of the adapted type.
+  # A positive sel_coeff increases its expected growth,
+  # while a negative value decreases its expected growth.
+  
+  # ====STEP 2: Simulate mutation from type a to type A
+  
+  # Estimate the number of type-a offspring that mutate
+  # Number of type-a offspring * mutation rate.
   
   mut_a_to_A <- rpois(1, offsp_a * mut_rate)
-
-# ====STEP 3: Simulate immigration from the source beach  
-# Generate the number of adapted individuals arriving from the cooler source beach.
-# source population size and the migration rate.
+  
+  # ====STEP 3: Simulate immigration from the source beach
+  # Generate the number of adapted individuals arriving from the cooler source beach.
+  # source population size and the migration rate.
   
   mig_A <- rpois(1, Cb_source_a * mig_rate)
-
-# ====STEP 4: Calculate population sizes in the next generation
-# Subtract individuals that mutated from type a.
-# max(..., 0) prevents the population from becoming negative.
+  
+  # ====STEP 4: Calculate population sizes in the next generation
+  # Subtract individuals that mutated from type a.
+  # max(..., 0) prevents the population from becoming negative.
   
   N_a_new <- max(offsp_a - mut_a_to_A, 0)
-
-# Add together:
-# Offspring already belonging to type A
-# New mutants from type a
-# Immigrants from the source beach
+  
+  # Add together:
+  # Offspring already belonging to type A
+  # New mutants from type a
+  # Immigrants from the source beach
   
   N_A_new <- offsp_A + mut_a_to_A + mig_A
   
-}
-
-# Return wild-type and adapted population sizes 
-# ====STEP 5: Return the results
-# Return the population sizes in this order:
-# First value  = type a
-# Second value = type A
-return(c(
-  N_a = N_a_new,
-  N_A = N_A_new,
-  N_total = N_total,
-  freq_a = freq_a,
-  freq_A = freq_A
-))
+  print(simulate_one_gen(100, 100, 0.1, 0.2, 0.01))
+  
 }
 
 # Test the function with mutation only (migration defaults to zero)
-# Example: simulate one generation with mutation but no migration.
+# Example: simulate one generation with mutation but no migration
 ```
 
-```{r}
-print(simulate_one_gen(100, 100, 0.1, 0.2, 0.01))
-```
-
-Simulate a population trajectory
+# Simulate a population trajectory
 
 ```{r}
 simulate_pop <- function(N_init_a, N_init_A, decay_rate, sel_coeff,
                          mut_rate, t_max, mig_rate = 0,
-                         N_source_A = 0, mig_cost = 0.2,
-                         growth_ref = 0.5, K = 500) {
-
+                         N_source_A = 0) {
+  
   # Store initial populations
   pop_new <- c(N_init_a, N_init_A)
   source_new <- N_source_A
-
+  
   pop_vector <- matrix(c(pop_new, source_new), nrow = 1)
-
+  
   for (i in 1:t_max) {
-
-    # NEW: Reproduction on the source beach with carrying capacity K
-    source_growth <- (1 + growth_ref) /
-      (1 + growth_ref * source_new / K)
-
-    offsp_source <- rpois(1, source_new * source_growth)
-
-    # NEW: Migration and migration mortality
-    mig_attempts <- rbinom(1, offsp_source, mig_rate)
-
-    mig_survived <- rbinom(
-      1, mig_attempts, 1 - mig_cost
-    )
-
-    # Update source population after migration
-    source_new <- offsp_source - mig_attempts
-
+    
+    # Migration and survival combined into one step
+    # mig_rate = probability of successful migration
+    migrants <- rbinom(1, N_source_A, mig_rate)
+    
     # Original function: simulate the warming beach
-    # Migration is set to zero here because we add surviving
-    # migrants separately below.
-  gen_result <- simulate_one_gen(
-  pop_new[1], pop_new[2], decay_rate,
-  sel_coeff, mut_rate, mig_rate = 0,
-  Cb_source_a = 0
-)
-
-# Keep only the two population counts
-pop_new <- c(
-  unname(gen_result["N_a"]),
-  unname(gen_result["N_A"])
-)
-    # NEW: Add surviving immigrants to adapted type A
-    pop_new[2] <- pop_new[2] + mig_survived
-
+    # Migration is set to zero here because we add the
+    # surviving migrants separately below.
+    gen_result <- simulate_one_gen(
+      pop_new[1], pop_new[2], decay_rate,
+      sel_coeff, mut_rate, mig_rate = 0,
+      Cb_source_a = 0
+    )
+    
+    # Keep only the two population counts
+    pop_new <- c(
+      unname(gen_result["N_a"]),
+      unname(gen_result["N_A"])
+    )
+    
+    # Add successful migrants to adapted type A
+    pop_new[2] <- pop_new[2] + migrants
+    
     # Save all populations
     pop_vector <- rbind(pop_vector, c(pop_new, source_new))
-
-    # Stop if the warming population recovers or the whole system
-    # becomes extinct
+    
+    # Stop if the warming population recovers or the
+    # whole system becomes extinct
     if (sum(pop_new) >= 1.5 * (N_init_a + N_init_A) ||
         sum(c(pop_new, source_new)) == 0) break
   }
-
+  
   rownames(pop_vector) <- 0:(nrow(pop_vector) - 1)
   colnames(pop_vector) <- c("a", "A", "source_A")
-
+  
   return(pop_vector)
 }
 
@@ -176,123 +148,66 @@ sel_coeff <- 0.2
 mut_rate <- 0.001
 N_source_A <- 100
 
-# NEW: Parameters for carrying capacity and migration mortality
-K <- 500
-growth_ref <- 0.5
-mig_cost <- 0.2 xxxxxxxx
+# Run simulations for different migration rates
+mig_rates <- seq(0, 0.05, by = 0.005)
 
-# Run simulation
-output <- simulate_pop(
-  init_a, init_A, decay_rate, sel_coeff,
-  mut_rate, max_gen,
-  mig_rate = 0.005,
-  N_source_A = N_source_A,
-  mig_cost = mig_cost,
-  growth_ref = growth_ref,
-  K = K
-)
+# Number of simulations for each migration rate
+n_replicates <- 100
 
-print(tail(output))
+# Store probability of adaptation
+prob_adaptation <- numeric(length(mig_rates))
 
-# Plot population trajectories
-x_range <- 0:(nrow(output) - 1)
+# Define population recovery threshold
+recovery_threshold <- 1.5 * (init_a + init_A)
 
-home_total <- output[, "a"] + output[, "A"]
-
-plot(x_range, home_total, type = "l",
-     ylim = c(0, max(output)),
-     xlab = "Generation",
-     ylab = "Population size",
-     main = "Sea-turtle population trajectory")
-
-lines(x_range, output[, "a"], col = "blue")
-lines(x_range, output[, "A"], col = "red")
-lines(x_range, output[, "source_A"], col = "darkgreen")
-
-legend("topleft",
-       legend = c("Total warming beach", "Usual type a",
-                  "Adapted type A", "Source beach"),
-       col = c("black", "blue", "red", "darkgreen"),
-       lty = 1, bty = "n")
-```
-
-simulate_pop \<- function(N_init_a, N_init_A, decay_rate, sel_coeff, mut_rate, t_max, mig_rate = 0, N_source_A = 0, mig_cost = 0.2, growth_ref = 0.5, K = 500) {
-
-\# Store initial populations pop_new \<- c(N_init_a, N_init_A) source_new \<- N_source_A
-
-pop_vector \<- matrix(c(pop_new, source_new), nrow = 1)
-
-for (i in 1:t_max) {
-
-```         
-# NEW: Reproduction on the source beach with carrying capacity K
-source_growth <- (1 + growth_ref) /
-  (1 + growth_ref * source_new / K)
-
-offsp_source <- rpois(1, source_new * source_growth)
-
-# NEW: Migration and migration mortality
-mig_attempts <- rbinom(1, offsp_source, mig_rate)
-
-mig_survived <- rbinom(
-  1, mig_attempts, 1 - mig_cost
-)
-
-# Update source population after migration
-source_new <- offsp_source - mig_attempts
-
-# Original function: simulate the warming beach
-# Migration is set to zero here because we add surviving
-# migrants separately below.
-```
-
-gen_result \<- simulate_one_gen( pop_new[1], pop_new[2], decay_rate, sel_coeff, mut_rate, mig_rate = 0, Cb_source_a = 0 )
-
-# Keep only the two population counts
-
-pop_new \<- c( unname(gen_result["N_a"]), unname(gen_result["N_A"]) ) \# NEW: Add surviving immigrants to adapted type A pop_new[2] \<- pop_new[2] + mig_survived
-
-```         
-# Save all populations
-pop_vector <- rbind(pop_vector, c(pop_new, source_new))
-
-# Stop if the warming population recovers or the whole system
-# becomes extinct
-if (sum(pop_new) >= 1.5 * (N_init_a + N_init_A) ||
-    sum(c(pop_new, source_new)) == 0) break
-```
-
+for (j in seq_along(mig_rates)) {
+  
+  # Store whether adaptation succeeds in each simulation
+  successes <- logical(n_replicates)
+  
+  for (r in seq_len(n_replicates)) {
+    
+    output <- simulate_pop(
+      init_a, init_A, decay_rate, sel_coeff,
+      mut_rate, max_gen,
+      mig_rate = mig_rates[j],
+      N_source_A = N_source_A
+    )
+    
+    # Calculate total population on the warming beach
+    home_total <- output[, "a"] + output[, "A"]
+    
+    # Success means population recovery with adapted turtles present
+    successes[r] <- any(
+      home_total >= recovery_threshold &
+        output[, "A"] > 0
+    )
+  }
+  
+  # Probability = successful simulations / total simulations
+  prob_adaptation[j] <- mean(successes)
 }
 
-rownames(pop_vector) \<- 0:(nrow(pop_vector) - 1) colnames(pop_vector) \<- c("a", "A", "source_A")
+# Display results
+results <- data.frame(
+  migration_rate = mig_rates,
+  probability_adaptation = prob_adaptation
+)
 
-return(pop_vector) }
+print(results)
 
-# Set parameters
+# Plot probability of adaptation against migration rate
+plot(
+  mig_rates * 100, prob_adaptation,
+  type = "b",
+  ylim = c(0, 1),
+  xlab = "Successful migration rate (%)",
+  ylab = "Probability of adaptation",
+  main = "Probability of Adaptation vs Migration Rate"
+)
+```
 
-max_gen \<- 1000 init_a \<- 100 init_A \<- 0 decay_rate \<- 0.1 sel_coeff \<- 0.2 mut_rate \<- 0.001 N_source_A \<- 100
-
-# NEW: Parameters for carrying capacity and migration mortality
-
-K \<- 500 growth_ref \<- 0.5 mig_cost \<- 0.2
-
-# Run simulation
-
-output \<- simulate_pop( init_a, init_A, decay_rate, sel_coeff, mut_rate, max_gen, mig_rate = 0.005, N_source_A = N_source_A, mig_cost = mig_cost, growth_ref = growth_ref, K = K )
-
-print(tail(output))
-
-# Plot population trajectories
-
-x_range \<- 0:(nrow(output) - 1)
-
-home_total \<- output[, "a"] + output[, "A"]
-
-plot(x_range, home_total, type = "l", ylim = c(0, max(output)), xlab = "Generation", ylab = "Population size", main = "Sea-turtle population trajectory")
-
-lines(x_range, output[, "a"], col = "blue") lines(x_range, output[, "A"], col = "red") lines(x_range, output[, "source_A"], col = "darkgreen")
-
-legend("topleft", legend = c("Total warming beach", "Usual type a", "Adapted type A", "Source beach"), col = c("black", "blue", "red", "darkgreen"), lty = 1, bty = "n")
+# Total population size and frequencies
 
 ```{r}
 # Calculate total local population
