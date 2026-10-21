@@ -149,12 +149,128 @@ simulate_pop <- function(N_init_a, N_init_A, decay_rate, sel_coeff,
     # Original function: simulate the warming beach
     # Migration is set to zero here because we add surviving
     # migrants separately below.
-    pop_new <- simulate_one_gen(
-      pop_new[1], pop_new[2], decay_rate,
-      sel_coeff, mut_rate, mig_rate = 0,
-      Cb_source_a = 0
+  gen_result <- simulate_one_gen(
+  pop_new[1], pop_new[2], decay_rate,
+  sel_coeff, mut_rate, mig_rate = 0,
+  Cb_source_a = 0
+)
+
+# Keep only the two population counts
+pop_new <- c(
+  unname(gen_result["N_a"]),
+  unname(gen_result["N_A"])
+)
+    # NEW: Add surviving immigrants to adapted type A
+    pop_new[2] <- pop_new[2] + mig_survived
+
+    # Save all populations
+    pop_vector <- rbind(pop_vector, c(pop_new, source_new))
+
+    # Stop if the warming population recovers or the whole system
+    # becomes extinct
+    if (sum(pop_new) >= 1.5 * (N_init_a + N_init_A) ||
+        sum(c(pop_new, source_new)) == 0) break
+  }
+
+  rownames(pop_vector) <- 0:(nrow(pop_vector) - 1)
+  colnames(pop_vector) <- c("a", "A", "source_A")
+
+  return(pop_vector)
+}
+
+
+# Set parameters
+max_gen <- 1000
+init_a <- 100
+init_A <- 0
+decay_rate <- 0.1
+sel_coeff <- 0.2
+mut_rate <- 0.001
+N_source_A <- 100
+
+# NEW: Parameters for carrying capacity and migration mortality
+K <- 500
+growth_ref <- 0.5
+mig_cost <- 0.2
+
+# Run simulation
+output <- simulate_pop(
+  init_a, init_A, decay_rate, sel_coeff,
+  mut_rate, max_gen,
+  mig_rate = 0.005,
+  N_source_A = N_source_A,
+  mig_cost = mig_cost,
+  growth_ref = growth_ref,
+  K = K
+)
+
+print(tail(output))
+
+# Plot population trajectories
+x_range <- 0:(nrow(output) - 1)
+
+home_total <- output[, "a"] + output[, "A"]
+
+plot(x_range, home_total, type = "l",
+     ylim = c(0, max(output)),
+     xlab = "Generation",
+     ylab = "Population size",
+     main = "Sea-turtle population trajectory")
+
+lines(x_range, output[, "a"], col = "blue")
+lines(x_range, output[, "A"], col = "red")
+lines(x_range, output[, "source_A"], col = "darkgreen")
+
+legend("topleft",
+       legend = c("Total warming beach", "Usual type a",
+                  "Adapted type A", "Source beach"),
+       col = c("black", "blue", "red", "darkgreen"),
+       lty = 1, bty = "n")
+```
+
+simulate_pop <- function(N_init_a, N_init_A, decay_rate, sel_coeff,
+                         mut_rate, t_max, mig_rate = 0,
+                         N_source_A = 0, mig_cost = 0.2,
+                         growth_ref = 0.5, K = 500) {
+
+  # Store initial populations
+  pop_new <- c(N_init_a, N_init_A)
+  source_new <- N_source_A
+
+  pop_vector <- matrix(c(pop_new, source_new), nrow = 1)
+
+  for (i in 1:t_max) {
+
+    # NEW: Reproduction on the source beach with carrying capacity K
+    source_growth <- (1 + growth_ref) /
+      (1 + growth_ref * source_new / K)
+
+    offsp_source <- rpois(1, source_new * source_growth)
+
+    # NEW: Migration and migration mortality
+    mig_attempts <- rbinom(1, offsp_source, mig_rate)
+
+    mig_survived <- rbinom(
+      1, mig_attempts, 1 - mig_cost
     )
 
+    # Update source population after migration
+    source_new <- offsp_source - mig_attempts
+
+    # Original function: simulate the warming beach
+    # Migration is set to zero here because we add surviving
+    # migrants separately below.
+  gen_result <- simulate_one_gen(
+  pop_new[1], pop_new[2], decay_rate,
+  sel_coeff, mut_rate, mig_rate = 0,
+  Cb_source_a = 0
+)
+
+# Keep only the two population counts
+pop_new <- c(
+  unname(gen_result["N_a"]),
+  unname(gen_result["N_A"])
+)
     # NEW: Add surviving immigrants to adapted type A
     pop_new[2] <- pop_new[2] + mig_survived
 
