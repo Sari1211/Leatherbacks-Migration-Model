@@ -89,6 +89,7 @@ simulate_one_gen <- function(Wb_a, WB_A, decay_rate, sel_coeff, mut_rate, mig_ra
 print(simulate_one_gen(100, 100, 0.1, 0.2, 0.01))
 ```
 
+
 Simulate a population trajectory
 
 ```{r}
@@ -146,3 +147,272 @@ lines(x_range, output[, "A"], col = "red")
 legend("topleft", legend = c("Total population", "Usual type a", "Adapted type A"),
        col = c("black", "blue", "red"), lty = 1, bty = "n")
 ```
+
+
+```{r}
+# 1. Carrying capacity (K) on the cooler/source beach.
+# 2. Mortality during migration (mig_cost).
+#
+# We track three populations:
+# a         = usual turtles on the warming beach
+# A         = adapted turtles on the warming beach
+# source_A  = adapted turtles on the cooler/source beach
+
+
+# Simulate one generation of the combined model.
+simulate_one_gen_trajectory <- function(
+    Wb_a, WB_A, N_source_A,
+    decay_rate, sel_coeff, mut_rate,
+    mig_rate, mig_cost, growth_ref, K
+) {
+
+  # ----------------------------------------------------------
+  # STEP 1: Reproduction on the warming beach
+  # ----------------------------------------------------------
+
+  # Usual turtles reproduce, but warming reduces their growth.
+  offsp_a <- rpois(1, Wb_a * (1 - decay_rate))
+
+  # Adapted turtles also experience warming.
+  # Their relative growth advantage is represented by sel_coeff.
+  offsp_A <- rpois(1, WB_A * (1 - decay_rate + sel_coeff))
+
+
+  # ----------------------------------------------------------
+  # STEP 2: Mutation from type a to type A
+  # ----------------------------------------------------------
+
+  # Some offspring of type a may acquire the adaptation.
+  # The expected number of mutants depends on mut_rate.
+  # min() prevents more offspring from mutating than exist.
+  mut_a_to_A <- min(
+    rpois(1, offsp_a * mut_rate),
+    offsp_a
+  )
+
+  # Remove the mutants from type a.
+  Wb_a_new <- offsp_a - mut_a_to_A
+
+
+  # ----------------------------------------------------------
+  # STEP 3: Reproduction on the cooler/source beach
+  # ----------------------------------------------------------
+
+  # The source beach contains adapted turtles represented by
+  # N_source_A. Its population changes every generation.
+  #
+  # At low population density, turtles can reproduce relatively
+  # quickly. As the population approaches carrying capacity K,
+  # growth slows down.
+  #
+  # growth_ref = low-density growth rate on the source beach
+  # K          = carrying capacity of the source beach
+
+  source_growth_factor <- (1 + growth_ref) /
+    (1 + growth_ref * N_source_A / K)
+
+  offsp_source_A <- rpois(
+    1,
+    N_source_A * source_growth_factor
+  )
+
+
+  # ----------------------------------------------------------
+  # STEP 4: Migration from the source beach to the warming beach
+  # ----------------------------------------------------------
+
+  # A proportion of the source-beach offspring attempt to migrate.
+  # mig_rate is the probability of attempting migration.
+  mig_attempts <- rbinom(
+    1,
+    size = offsp_source_A,
+    prob = mig_rate
+  )
+
+  # Not every migrant survives the journey.
+  # mig_cost is the probability of dying during migration.
+  # Therefore, 1 - mig_cost is the probability of surviving.
+  mig_survived <- rbinom(
+    1,
+    size = mig_attempts,
+    prob = 1 - mig_cost
+  )
+
+  # All migrants leave the source beach, including those that die.
+  # Only the offspring that stayed remain in the source population.
+  N_source_A_new <- offsp_source_A - mig_attempts
+
+
+  # ----------------------------------------------------------
+  # STEP 5: Calculate the next generation on the warming beach
+  # ----------------------------------------------------------
+
+  # The next adapted population consists of:
+  # 1. Offspring that were already type A.
+  # 2. New mutants from type a.
+  # 3. Adapted immigrants that survived migration.
+  WB_A_new <- offsp_A + mut_a_to_A + mig_survived
+
+
+  # Return all three population sizes in a fixed order.
+  return(c(Wb_a_new, WB_A_new, N_source_A_new))
+}
+
+
+# ============================================================
+# SIMULATE THE FULL POPULATION TRAJECTORY
+# ============================================================
+
+simulate_pop <- function(
+    N_init_a, N_init_A,
+    decay_rate, sel_coeff, mut_rate,
+    t_max, mig_rate = 0, N_source_A = 0,
+    mig_cost = 0.2, growth_ref = 0.5, K = 500
+) {
+
+  # Store the initial populations:
+  # 1st value = type a on the warming beach
+  # 2nd value = type A on the warming beach
+  # 3rd value = adapted source population
+  pop_new <- c(N_init_a, N_init_A, N_source_A)
+
+  # Store the starting generation in the output matrix.
+  pop_vector <- matrix(pop_new, nrow = 1)
+
+  # Run the simulation for up to t_max generations.
+  for (i in 1:t_max) {
+
+    # Calculate the population sizes in the next generation.
+    pop_new <- simulate_one_gen_trajectory(
+      Wb_a = pop_new[1],
+      WB_A = pop_new[2],
+      N_source_A = pop_new[3],
+      decay_rate = decay_rate,
+      sel_coeff = sel_coeff,
+      mut_rate = mut_rate,
+      mig_rate = mig_rate,
+      mig_cost = mig_cost,
+      growth_ref = growth_ref,
+      K = K
+    )
+
+    # Add this generation to the population history.
+    pop_vector <- rbind(pop_vector, pop_new)
+
+    # Keep the original recovery criterion:
+    # stop when the warming-beach population reaches 1.5 times
+    # its initial size. Alternatively, stop if the entire system
+    # (both beaches together) becomes extinct.
+    home_total <- pop_new[1] + pop_new[2]
+
+    if (home_total >= 1.5 * (N_init_a + N_init_A) ||
+        sum(pop_new) == 0) {
+      break
+    }
+  }
+
+  # Label rows by generation and columns by population.
+  rownames(pop_vector) <- 0:(nrow(pop_vector) - 1)
+  colnames(pop_vector) <- c("a", "A", "source_A")
+
+  return(pop_vector)
+}
+
+
+# ============================================================
+# SET PARAMETERS FOR ONE EXAMPLE TRAJECTORY
+# ============================================================
+
+# Initial populations on the warming beach.
+init_a <- 100
+init_A <- 0
+
+# Initial population on the cooler/source beach.
+N_source_A <- 100
+
+# Parameters from your original sea-turtle model.
+decay_rate <- 0.1
+sel_coeff <- 0.2
+mut_rate <- 0.001
+
+# Parameters added from the evolutionary-rescue model.
+mig_rate <- 0.005
+mig_cost <- 0.2
+growth_ref <- 0.5
+K <- 500
+
+# Maximum number of generations.
+max_gen <- 1000
+
+
+# ============================================================
+# RUN THE SIMULATION
+# ============================================================
+
+output <- simulate_pop(
+  N_init_a = init_a,
+  N_init_A = init_A,
+  decay_rate = decay_rate,
+  sel_coeff = sel_coeff,
+  mut_rate = mut_rate,
+  t_max = max_gen,
+  mig_rate = mig_rate,
+  N_source_A = N_source_A,
+  mig_cost = mig_cost,
+  growth_ref = growth_ref,
+  K = K
+)
+
+# Display the last few generations.
+print(tail(output))
+
+
+# ============================================================
+# PLOT THE POPULATION TRAJECTORIES
+# ============================================================
+
+# Total population on the warming beach (type a + type A).
+home_total <- output[, "a"] + output[, "A"]
+
+# Population remaining on the cooler/source beach.
+source_total <- output[, "source_A"]
+
+# Generation numbers for the x-axis.
+x_range <- 0:(nrow(output) - 1)
+
+# Use a common y-axis range so all populations can be compared.
+y_max <- max(c(home_total, source_total, 1))
+
+# Plot the total warming-beach population.
+plot(
+  x_range, home_total,
+  type = "l", lwd = 2,
+  ylim = c(0, y_max),
+  xlab = "Generation",
+  ylab = "Population size",
+  main = "Sea-turtle population trajectories"
+)
+
+# Show the two turtle types on the warming beach.
+lines(x_range, output[, "a"], col = "blue", lwd = 2)
+lines(x_range, output[, "A"], col = "red", lwd = 2)
+
+# Show the changing population on the cooler/source beach.
+lines(x_range, source_total, col = "darkgreen", lwd = 2)
+
+# Add a legend to explain the four plotted curves.
+legend(
+  "topleft",
+  legend = c(
+    "Warming beach: total",
+    "Usual type a",
+    "Adapted type A",
+    "Cooler/source beach"
+  ),
+  col = c("black", "blue", "red", "darkgreen"),
+  lty = 1,
+  lwd = 2,
+  bty = "n"
+)
+```
+
