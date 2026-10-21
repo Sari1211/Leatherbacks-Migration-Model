@@ -4,7 +4,7 @@ output: html_notebook
 ---
 
 | Code | Meaning in the Sea-Turtle Model |
-|----|----|
+|------------------------------------|------------------------------------|
 | `N_a` | Number of local turtles on the warming beach |
 | `N_A` | Number of adapted-type turtles on the warming beach |
 | `decay_rate` | Negative effect of warming on expected population growth |
@@ -160,16 +160,16 @@ simulate_pop <- function(N_init_a, N_init_A, decay_rate, sel_coeff,
 N_init_a <- 100
 N_init_A <- 0
 N_source_A <- 100
-decay_rate <- 0.01
-sel_coeff <- 0.2
+decay_rate <- 0.1
+sel_coeff <- 0.15
 mut_rate <- 0.0001
-t_max <- 1000
+t_max <- 30
 mig_rate <- 0.5
 
 output <- simulate_pop(N_init_a, N_init_A, decay_rate, sel_coeff, mut_rate, t_max, mig_rate, N_source_A)
 
 # Run simulations for different migration rates
-mig_rates <- seq(0, 0.01, by = 0.001)
+mig_rates <- seq(0, 0.05, by = 0.005)
 
 # Number of simulations for each migration rate
 n_replicates <- 100
@@ -190,7 +190,7 @@ for (j in seq_along(mig_rates)) {
   output <- simulate_pop(
   N_init_a, N_init_A, decay_rate, sel_coeff,
   mut_rate, t_max,
-  mig_rate = mig_rates[j],
+  mig_rate = 0.01,
   N_source_A = N_source_A
 )
     # Calculate total population on the warming beach
