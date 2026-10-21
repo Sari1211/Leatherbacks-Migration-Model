@@ -215,37 +215,42 @@ results <- data.frame(
 
 print(results)
 
-# Plot probability of adaptation against migration rate
+#This is where plotting starts.
+
+# Display both plots side by side
+
+par(mfrow = c(1, 2))
+
+# Plot 1: Migration rate vs adaptation probability
 plot(
   mig_rates * 100, prob_adaptation,
-  type = "b",
-  ylim = c(0, 1),
-  xlab = "Successful migration rate (%)",
+  type = "b", pch = 16, ylim = c(0, 1),
+  xlab = "Migration rate (%)",
   ylab = "Probability of adaptation",
-  main = "Probability of Adaptation vs Migration Rate"
+  main = "Migration and Adaptation"
 )
 
+# Plot 2: Population dynamics
+generation <- 0:(nrow(output) - 1)
+total <- output[, "a"] + output[, "A"]
 
-# Test the function and plot the result
-# set t_max to a value to be used througout
-max_gen <- 1000
+plot(
+  generation, total,
+  type = "l", col = "black",
+  ylim = c(0, max(c(total, recovery_threshold))),
+  xlab = "Generation",
+  ylab = "Population size",
+  main = "Population Dynamics"
+)
 
-# create your simulation data
-output <- simulate_pop(N_init_a, N_init_A, decay_rate, sel_coeff, mut_rate, t_max, mig_rates,N_source_A)
+lines(generation, output[, "a"], col = "blue")
+lines(generation, output[, "A"], col = "red")
+abline(h = recovery_threshold, col = "darkgreen", lty = 2)
 
-# show the last few lines of the data table
-print(tail(output))
-# plot the output - note that the plot range and the x axis have to be adjusted based on the length of the table
-# determine x axis range 
-x_range <- 0:(length(output[,1])-1)
-# this plots the total population size
-plot(x_range,output[,1]+output[,2],type='l',ylim=c(0,max(output[,1]+output[,2])),xlab = "Generation",ylab = "Population size")
-# add number of wild type individuals
-lines(x_range,output[,1], col="blue")
-# add number of mutant individuals
-lines(x_range,output[,2], col="red")
+par(mfrow = c(1, 1))
 
 ```
+
 
 # Total population size and frequencies
 
