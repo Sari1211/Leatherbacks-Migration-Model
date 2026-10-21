@@ -4,7 +4,7 @@ output: html_notebook
 ---
 
 | Code | Meaning in the Sea-Turtle Model |
-|------------------------------------|------------------------------------|
+|----|----|
 | `N_a` | Number of local turtles on the warming beach |
 | `N_A` | Number of adapted-type turtles on the warming beach |
 | `decay_rate` | Negative effect of warming on expected population growth |
@@ -30,7 +30,7 @@ output: html_notebook
 # 4. Immigration of adapted individuals from a source beach
 # 5. Population growth affected by warming
 
-simulate_one_gen <- function(N_a, N_A, decay_rate, sel_coeff, mut_rate, mig_rate = 0, Cb_source_a = 0, carrying_capacity = 1000) {
+simulate_one_gen <- function(N_a, N_A, decay_rate, sel_coeff, mut_rate, mig_rate = 0, Cb_source_a = 0, carrying_capacity = 10000) {
   
   # ====STEP 1: Generate offspring for each turtle type
   
@@ -80,7 +80,10 @@ simulate_one_gen <- function(N_a, N_A, decay_rate, sel_coeff, mut_rate, mig_rate
   
   N_A_new <- offsp_A + mut_a_to_A + mig_A
   
-  return(c(N_a_new, N_A_new))
+  return(c(
+  N_a = N_a_new,
+  N_A = N_A_new
+))
   
 }
 
@@ -115,21 +118,21 @@ simulate_pop <- function(N_init_a, N_init_A, decay_rate, sel_coeff,
       sel_coeff, mut_rate, mig_rate = 0,
       Cb_source_a = 0
     )
-    print(gen_result)
+    #print(gen_result)
     # Keep only the two population counts
     pop_new <- c(
       unname(gen_result["N_a"]),
       unname(gen_result["N_A"])
     )
     
-    print(pop_new)
+    #print(pop_new)
     # Add successful migrants to adapted type A
     pop_new[2] <- pop_new[2] + migrants
     
     # Save all populations
     pop_vector <- rbind(pop_vector, c(pop_new, source_new))
     
-    print(c(pop_new, source_new,i))
+    #print(c(pop_new, source_new,i))
     
     # Stop if the warming population recovers or the
     # whole system becomes extinct
@@ -143,9 +146,17 @@ simulate_pop <- function(N_init_a, N_init_A, decay_rate, sel_coeff,
   return(pop_vector)
 }
 
+# Define baseline model parameters
 
+N_init_a <- 100
+N_init_A <- 100
+N_source_A <- 200
+decay_rate <- 0.5
+sel_coeff <- 0.2
+mut_rate <- 0.001
+t_max <- 10
 
-output <- simulate_pop(N_init_a = 1000, N_init_A =1000, decay_rate = 0.5, sel_coeff = 1.5, mut_rate = 0.5, t_max = 0, mig_rate = 0,N_source_A = 2000)
+output <- simulate_pop(N_init_a = 100, N_init_A =100, decay_rate = 0.5, sel_coeff = 0.2, mut_rate = 0.001, t_max = 10, mig_rate = 0,N_source_A = 200)
 
 # Run simulations for different migration rates
 mig_rates <- seq(0, 0.05, by = 0.005)
@@ -157,7 +168,7 @@ n_replicates <- 100
 prob_adaptation <- numeric(length(mig_rates))
 
 # Define population recovery threshold
-recovery_threshold <- 1.5 * (init_a + init_A)
+recovery_threshold <- 1.5 * (N_init_a + N_init_A)
 
 for (j in seq_along(mig_rates)) {
   
@@ -167,8 +178,8 @@ for (j in seq_along(mig_rates)) {
   for (r in seq_len(n_replicates)) {
     
     output <- simulate_pop(
-      init_a, init_A, decay_rate, sel_coeff,
-      mut_rate, max_gen,
+      N_init_a, N_init_A, decay_rate, sel_coeff,
+      mut_rate, t_max,
       mig_rate = mig_rates[j],
       N_source_A = N_source_A
     )
@@ -209,8 +220,10 @@ plot(
 # Test the function and plot the result
 # set t_max to a value to be used througout
 max_gen <- 1000
+
 # create your simulation data
-output <- simulate_pop(N_init_a = 1000, N_init_A =1000, decay_rate = 0.5, sel_coeff = 1.5, mut_rate = 0.5, t_max = 0, mig_rate = 0,N_source_A = 0)
+output <- simulate_pop(N_init_a, N_init_A, decay_rate, sel_coeff, mut_rate, t_max, mig_rates,N_source_A)
+
 # show the last few lines of the data table
 print(tail(output))
 # plot the output - note that the plot range and the x axis have to be adjusted based on the length of the table
@@ -228,18 +241,32 @@ lines(x_range,output[,2], col="red")
 # Total population size and frequencies
 
 ```{r}
-# Calculate total local population
-N_total <- N_a_new + N_A_new
+# Calculate Frequencies
+# Calculate the total local population at each generation
+N_total <- output[, "a"] + output[, "A"]
 
-# Calculate frequencies
-freq_a <- if (N_total > 0) {
-  N_a_new / N_total
-} else {
+# Calculate the frequency of type a
+freq_a <- ifelse(
+  N_total > 0,
+  output[, "a"] / N_total,
   NA
-}
+)
 
-freq_A <- if (N_total > 0) {
-  N_A_new / N_total
-} else {
+# Calculate the frequency of type A
+freq_A <- ifelse(
+  N_total > 0,
+  output[, "A"] / N_total,
   NA
+)
+
+# Store the results in a data frame
+frequency_output <- data.frame(
+  generation = 0:(nrow(output) - 1),
+  N_total = N_total,
+  freq_a = freq_a,
+  freq_A = freq_A
+)
+
+# Display the frequency results
+print(frequency_output)
 ```
