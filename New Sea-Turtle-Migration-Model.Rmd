@@ -17,39 +17,30 @@ output: html_notebook
 # Simulate One Generation
 
 ```{r}
-# ==== FUNCTION 1: SIMULATE ONE GENERATION
+# FUNCTION 1: SIMULATE ONE GENERATION
 
 # The model includes two turtle types:
 # a = usual turtles, which are affected by warming
 # A = adapted turtles, which have a relative growth advantage
 
-simulate_one_gen <- function(N_a, N_A, decay_rate, sel_coeff,
-                             mut_rate, mig_rate, N_source_a,
-                             carrying_capacity = 1000) {
+simulate_one_gen <- function(N_a, N_A, decay_rate, sel_coeff, mut_rate, mig_rate, N_source_a, carrying_capacity = 1000) {
 
 # STEP 1: Generate offspring for each turtle type
 
 # For type a, the expected number of offspring is reduced
 # by the warming-related decay rate.
-  offsp_a <- rpois(1, N_a * (1 - decay_rate))
-
 # For type A, offspring production depends on its current population, its selection advantage, warming and how close the total population is to carrying capacity.
-  offsp_A <- rpois(
-    1,
-    N_A + N_A * (sel_coeff - decay_rate) *
-      (1 - (N_a + N_A) / carrying_capacity)
-  )
+  offsp_a <- rpois(1, N_a * (1 - decay_rate))
+  offsp_A <- rpois(1, N_A + N_A * (sel_coeff - decay_rate) * (1 - (N_a + N_A) / carrying_capacity))
 
 # Calculate the total number of offspring of both types.
   offsp_total <- offsp_A + offsp_a
 
 # If the total exceeds carrying capacity, randomly retain individuals until the population is within the limit.
-  if (offsp_total > carrying_capacity) {
-    offsp_a <- rbinom(
-      1,
-      carrying_capacity,
-      offsp_a / offsp_total
-    )
+  if (offsp_total > carrying_capacity) 
+    {
+    
+    offsp_a <- rbinom(1, carrying_capacity, offsp_a / offsp_total)
 
 # The remaining individuals belong to type A.
     offsp_A <- carrying_capacity - offsp_a
@@ -59,9 +50,6 @@ simulate_one_gen <- function(N_a, N_A, decay_rate, sel_coeff,
 
 # The expected number of mutations depends on the number of type-a offspring and the mutation rate.
   mut_a_to_A <- rpois(1, offsp_a * mut_rate)
-
-# A cannot have more new mutants than there are a offspring.
-  mut_a_to_A <- min(mut_a_to_A, offsp_a)
 
 # STEP 3: Simulate immigration from the source beach
 
@@ -83,9 +71,13 @@ simulate_one_gen <- function(N_a, N_A, decay_rate, sel_coeff,
     N_a = N_a_new,
     N_A = N_A_new
   ))
+
 }
 
+print(simulate_one_gen(N_a = 100, N_A = 0, decay_rate = 0.1, sel_coeff = 0.2, mut_rate = 0.01, mig_rate = 0.05, N_source_a = 1000, carrying_capacity = 1000))
+
 ```
+
 
 # Simulate a population trajectory
 
@@ -252,7 +244,7 @@ for (j in seq_along(migration_rates)) {
       decay_rate = 0.1,
       sel_coeff = 0.2,
       mut_rate = 0.001,
-      mig_rate = migration_rates[j],
+      mig_rate = migration_rates[j], 
       N_source_a = 1000,
       t_max = max_gen,
       carrying_capacity = 1000
@@ -276,7 +268,7 @@ for (j in seq_along(migration_rates)) {
 # PLOT 2: MIGRATION VS POPULATION TYPES AND TOTAL POPULATION
 
 # Leave space on the right for the legend
-par(mar = c(5, 4, 4, 12), xpd = NA)
+par(mar = c(5, 4, 4, 14), xpd = NA)
 
 matplot(
   migration_rates,
@@ -294,7 +286,7 @@ matplot(
 
 legend(
   "topright",
-  inset = c(-0.48, 0),
+  inset = c(-0.65, 0),
   legend = c("Adapted turtles (A)", "Usual turtles (a)", "Total population (a + A)"),
   col = c("red", "blue", "darkgreen"),
   pch = c(19, 17, 15),
