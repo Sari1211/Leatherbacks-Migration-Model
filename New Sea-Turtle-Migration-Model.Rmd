@@ -4,7 +4,7 @@ output: html_notebook
 ---
 
 | Code | Meaning in the Sea-Turtle Model |
-|------------------------------------|------------------------------------|
+|----|----|
 | `N_a` | Number of local turtles on the warming beach |
 | `N_A` | Number of adapted-type turtles on the warming beach |
 | `decay_rate` | Negative effect of warming on expected population growth |
@@ -77,7 +77,6 @@ simulate_one_gen <- function(N_a, N_A, decay_rate, sel_coeff, mut_rate, mig_rate
 print(simulate_one_gen(N_a = 100, N_A = 0, decay_rate = 0.1, sel_coeff = 0.2, mut_rate = 0.01, mig_rate = 0.05, N_source_a = 1000, carrying_capacity = 1000))
 
 ```
-
 
 # Simulate a population trajectory
 
@@ -177,7 +176,6 @@ x_range <- 0:(nrow(output) - 1)
 
 ```
 
-
 ```{r}
 # Leave space on the right for the legend
 par(mar = c(5, 4, 4, 14), xpd = NA)
@@ -214,7 +212,6 @@ legend(
 par(mar = c(5, 4, 4, 2), xpd = FALSE)
 
 ```
-
 
 ```{r}
 # PLOTS 2: EFFECT OF MIGRATION
@@ -299,8 +296,7 @@ legend(
 # Restore the standard plotting margins, leave space on the right for the legend, if needed.
 par(mar = c(5, 4, 4, 2), xpd = FALSE)
 
-``` 
-
+```
 
 # Total population size and frequencies
 
