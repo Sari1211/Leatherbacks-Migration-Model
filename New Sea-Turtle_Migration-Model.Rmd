@@ -250,7 +250,7 @@ par(mar = c(5, 4, 4, 2), xpd = FALSE)
 # PLOTS 2: EFFECT OF MIGRATION
 
 # Migration rates to compare
-migration_rates <- seq(0, 0.10, by = 0.01)
+migration_rates <- 10^seq(-5, 0, by = 1)
 
 # Repeat simulations to account for random variation
 n_replicates <- 100
