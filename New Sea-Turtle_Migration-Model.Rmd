@@ -20,10 +20,15 @@ This is a simplified model. decay_rate represents the negative effect of warming
 # Parameters, initial conditions and variables
 
 | Code | Meaning in the Sea-Turtle Model |
+<<<<<<< HEAD:New Sea-Turtle_Migration-Model.Rmd
 |------------------------------------|------------------------------------|
 | Variables |  |
 | ----------------------------------- | --------------------------------- |
 | `N_a` | Number of migrating cool beach turtles to the warming beach |
+=======
+|----|----|
+| `N_a` | Number of local turtles on the warming beach |
+>>>>>>> 7a6ca0a9e25f10a85bf5d65e120b3051b355c8b0:New Sea-Turtle-Migration-Model.Rmd
 | `N_A` | Number of adapted-type turtles on the warming beach |
 | `decay_rate` | Negative effect of warming on expected population growth |
 | `sel_coeff` | Relative growth advantage of the adapted type |
