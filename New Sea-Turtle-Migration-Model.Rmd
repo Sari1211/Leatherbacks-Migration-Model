@@ -284,7 +284,7 @@ matplot(
 legend(
   "topright",
   inset = c(-0.65, 0),
-  legend = c("Adapted turtles (A)", "Usual turtles (a)", "Total population (a + A)"),
+  legend = c("Adapted turtles (A)", "Migrating turtles (a)", "Total population (a + A)"),
   col = c("red", "blue", "darkgreen"),
   pch = c(19, 17, 15),
   lty = 1,
