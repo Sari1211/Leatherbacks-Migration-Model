@@ -1,11 +1,11 @@
 ---
-title: "R Notebook"
+title: "Sea Turlte Migration Model"
 output: html_notebook
 ---
 
 # Model question and assumptions
 
-Our model explores how migration from a source beach affects the populations of usual and adapted turtles on a beach affected by warming. We compare the two turtle types over generations and investigate how different migration rates change the final population sizes.
+Our model explores how migration from a source beach which affects the populations of usual and adapted turtles on a beach affected by warming. We compare the two turtle types over generations and investigate how different migration rates change the final population sizes.
 
 The model represents two types:
 
@@ -184,7 +184,7 @@ output <- simulate_pop(
   decay_rate = 0.1,         # Negative effect of warming
   sel_coeff = 0.2,          # Relative growth advantage of type A
   mut_rate = 0.001,         # Mutation rate from a to A
-  mig_rate = 0,          # Migration rate from the source beach
+  mig_rate = 5,          # Migration rate from the source beach
   N_source_a = 1000,        # Number of turtles in the source population
   t_max = max_gen,          # Number of generations to simulate
   carrying_capacity = 1000  # Maximum population size for the offspring step
@@ -317,7 +317,7 @@ matplot(
   type = "n", xaxt = "n",
   xlim = c(0.5, length(migration_rates) + 0.5),
   ylim = range(c(0, unlist(all_results)), finite = TRUE),
-  xlab = "Migration rate",
+  xlab = "Average number of migrating turtles per generation",
   ylab = "Number of turtles",
   main = "Effect of migration on population"
 )
@@ -358,7 +358,7 @@ axis(
 legend(
   "topright",
   inset = c(-1,00, 0),cex = 0.6,
-  legend = c("Adapted turtles (A)", "Migrating turtles (a)", "Total population (a + A)"),
+  legend = c("Adapted turtles (A)", "Non adapted turtles (a)", "Total population (a + A)"),
   col = c("red", "blue", "darkgreen"),
   pch = c(19, 17, 15),
   lty = 1,
