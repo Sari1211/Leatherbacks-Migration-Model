@@ -1,0 +1,692 @@
+---
+title: "Evolutionary rescue with migration: a sea turtle case study"
+author: "Fadly Muhammad
+         Sara Costanzo"
+date: "2026-10-15"
+---
+
+3.  The report 3.1 Structure and length The report contains the following sections, in this order:
+4.  Title
+5.  Authors (the author names are stated below the title)
+6.  Abstract
+7.  Introduction
+8.  Model & Methods
+9.  Questions & Answers
+10. Results
+11. Discussion
+12. References The report contains no more than 3000 words of main text (i.e., excluding code)
+
+# Abstract
+
+
+# Introduction
+
+In these Model we want to show in a very simplified way how migration can help a population or not to survive or adapt. Our very first Idea treated the subject of global warming and how these rising temperatures are impacting on migration routes of sea-turtles. And by simulating sea-turtles migrating to a warmer habitat and adapting we want to simulate the changing habitat because of climate warming.
+
+# Model question and assumptions
+
+Our model explores how migration from a source beach affects the populations of usual and adapted turtles on a beach affected by warming. We compare the two turtle types over generations and investigate how different migration rates change the final population sizes.
+
+The model represents two types:
+
+Type a (immigrating turtles from a cool beach): their expected offspring number is reduced by decay_rate.
+
+Type A (adapted turtles to the new habitat warming beach): their expected growth is affected by warming and by the relative advantage specified by sel_coeff.
+
+New A turtles can arise through mutation from a. In the current code, migrants from the source/cool beach are type a turtles, not adapted type A turtles. The source population is treated as constant.
+
+This is a simplified model. decay_rate represents the negative effect of warming rather than simulating ocean temperature directly. Migration is represented by a rate of immigration, not by explicitly modelling two different routes or route-specific mortality.
+
+# Parameters, initial conditions and variables
+
++--------------------------------------+--------------------------------------------------------------+
+| Code                                 | Meaning in the Sea-Turtle Model                              |
++======================================+==============================================================+
+| \# Variables                         |                                                              |
++--------------------------------------+--------------------------------------------------------------+
+| ------------                         | ----------                                                   |
++--------------------------------------+--------------------------------------------------------------+
+| `N_a`                                | Number of local turtles on the warming beach                 |
++--------------------------------------+--------------------------------------------------------------+
+| `N_A`                                | Number of adapted-type turtles on the warming beach          |
++--------------------------------------+--------------------------------------------------------------+
+| `decay_rate`                         | Negative effect of warming on expected population growth     |
++--------------------------------------+--------------------------------------------------------------+
+| `sel_coeff`                          | Relative growth advantage of the adapted type                |
++--------------------------------------+--------------------------------------------------------------+
+| `mut_rate`                           | Rate at which the adapted type arises through new mutations  |
++--------------------------------------+--------------------------------------------------------------+
+| `mig_rate`                           | Rate of arrival of adapted individuals from the cooler beach |
++--------------------------------------+--------------------------------------------------------------+
+| `N_source_a`                         | Size of source/cool beach population                         |
++--------------------------------------+--------------------------------------------------------------+
+| `carrying_capacity`                  | maximum population size the warming habitat can support      |
++--------------------------------------+--------------------------------------------------------------+
+| ##### \# Parameters                  |                                                              |
++--------------------------------------+--------------------------------------------------------------+
+| ------------------------------------ | ------------------------------------                         |
++--------------------------------------+--------------------------------------------------------------+
+
+# Simulate One Generation
+
+The first function calculates what happens over one generation. The order of events in our code is:
+
+1.  Generate offspring for both types.
+2.  If the total offspring exceeds carrying capacity, reduce the offspring numbers to the limit.
+3.  Generate mutations from type `a` to type `A` among the `a` offspring.
+4.  Generate immigrants of type `a` from the source beach.
+5.  Calculate the population sizes `a` and `A` for the next generation.
+
+```{r}
+# FUNCTION 1: SIMULATE ONE GENERATION
+
+# The model includes two turtle types:
+# a = usual turtles, which are affected by warming
+# A = adapted turtles, which have a relative growth advantage
+
+simulate_one_gen <- function(N_a, N_A, decay_rate, sel_coeff, mut_rate, mig_rate, N_source_a, carrying_capacity = 1000) {
+
+# STEP 1: Generate offspring for each turtle type
+
+# For type a, the expected number of offspring is reduced
+# by the warming-related decay rate.
+# For type A, offspring production depends on its current population, its selection advantage, warming and how close the total population is to carrying capacity.
+  offsp_a <- rpois(1, N_a * (1 - decay_rate))
+  offsp_A <- rpois(1, N_A + N_A * (sel_coeff - decay_rate) * (1 - (N_a + N_A) / carrying_capacity))
+
+# Calculate the total number of offspring of both types.
+  offsp_total <- offsp_A + offsp_a
+
+# If the total exceeds carrying capacity, randomly retain individuals until the population is within the limit.
+  if (offsp_total > carrying_capacity) 
+    {
+    
+    offsp_a <- rbinom(1, carrying_capacity, offsp_a / offsp_total)
+
+# The remaining individuals belong to type A.
+    offsp_A <- carrying_capacity - offsp_a
+  }
+
+# STEP 2: Simulate mutation from type a to type A
+
+# The expected number of mutations depends on the number of type-a offspring and the mutation rate.
+  mut_a_to_A <- rpois(1, offsp_a * mut_rate)
+
+# STEP 3: Simulate immigration from the source beach
+
+# The number of immigrants is determined by the source population size and the migration rate.
+# In this model, immigrants are type a, not type A.
+  mig_a <- rpois(1, N_source_a * mig_rate)
+
+# STEP 4: Calculate the population sizes in the next generation
+
+# Type a loses individuals through mutation but gains individuals through immigration.
+  N_a_new <- offsp_a - mut_a_to_A + mig_a
+
+# Type A gains the individuals that mutated from type a.
+# Existing type-A offspring remain part of this population.
+  N_A_new <- offsp_A + mut_a_to_A
+
+# Apply carrying capacity after immigration.
+N_total_new <- N_a_new + N_A_new
+
+if (N_total_new > carrying_capacity) {
+  N_a_new <- rbinom(1, carrying_capacity,
+                   N_a_new / N_total_new)
+  N_A_new <- carrying_capacity - N_a_new
+}
+  
+# Return the updated populations for the next generation.
+  return(c(
+    N_a = N_a_new,
+    N_A = N_A_new
+  ))
+
+}
+
+print(simulate_one_gen(N_a = 100, N_A = 0, decay_rate = 0.1, sel_coeff = 0.2, mut_rate = 0.01, mig_rate = 0.05, N_source_a = 1000, carrying_capacity = 1000))
+
+```
+
+# Simulate a population trajectory
+
+```{r}
+# FUNCTION 2: SIMULATE THE POPULATION
+
+# This function simulates how the populations of type a and type A change over several generations.
+
+# It uses simulate_one_gen() to calculate the population in the next generation and saves the results at every step.
+
+simulate_pop <- function(N_init_a, N_init_A, decay_rate, sel_coeff,
+                         mut_rate, mig_rate, N_source_a, t_max,
+                         carrying_capacity = 1000) {
+
+# Store the initial population.
+# The simulation starts with N_init_a usual turtles and N_init_A adapted turtles.
+  pop_vector <- c(N_init_a, N_init_A)
+
+# Store the current population.
+# This vector is updated at every generation.
+  pop_new <- c(N_init_a, N_init_A)
+
+# Run the simulation for t_max generations.
+# seq_len(t_max) produces the numbers from 1 to t_max.
+  for (i in seq_len(t_max)) {
+
+# Simulate the next generation using Function 1.
+# pop_new[1] is the current number of a turtles.
+# pop_new[2] is the current number of A turtles.
+# The other describe warming, selection, mutation, migration and carrying capacity.
+    pop_new <- simulate_one_gen(
+      pop_new[1], pop_new[2],
+      decay_rate, sel_coeff, mut_rate,
+      mig_rate, N_source_a, carrying_capacity
+    )
+
+# Add the newly calculated population as a new row.
+# This stores the population sizes for every generation, rather than keeping only the final result.
+    pop_vector <- rbind(pop_vector, pop_new)
+  }
+
+# Label the rows with their generation numbers.
+# The first row is generation 0, which contains the initial population. The last row corresponds to generation t_max.
+  rownames(pop_vector) <- 0:(nrow(pop_vector) - 1)
+
+# Name the two columns according to the turtle types.
+# Generations remain row names; they are not a population column.
+  colnames(pop_vector) <- c("a", "A")
+
+# Return the complete population trajectory.
+# The result contains two columns (a and A) and one row for the initial population and every simulated generation.
+  return(pop_vector)
+}
+
+
+# MODEL PARAMETERS
+
+# Set the number of generations to simulate.
+# The model will calculate generations 1 to 1000 after
+# starting with the initial population at generation 0.
+max_gen <- 1000
+
+
+# PLOT 1: GENERATION VS POPULATION SIZE
+
+# Run the population simulation with the chosen parameters.
+output <- simulate_pop(
+  N_init_a = 0,          # Initial number of usual turtles
+  N_init_A = 0,             # Initially, there are no adapted turtles
+  decay_rate = 0.1,         # Negative effect of warming
+  sel_coeff = 0.2,          # Relative growth advantage of type A
+  mut_rate = 0.001,         # Mutation rate from a to A
+  mig_rate = 0,          # Migration rate from the source beach
+  N_source_a = 1000,        # Number of turtles in the source population
+  t_max = max_gen,          # Number of generations to simulate
+  carrying_capacity = 1000  # Maximum population size for the offspring step
+)
+
+# Create a separate display table.
+# The row names from output are shown in a column named Generations.
+# This does not change the original output matrix.
+output_table <- data.frame(
+  Generations = as.integer(rownames(output)),
+  a = output[, "a"],
+  A = output[, "A"]
+)
+
+# Print the last six generations, including generation 1000.
+print(tail(output_table), row.names = FALSE)
+
+
+# GENERATION NUMBERS FOR PLOT 1
+
+# Create the generation numbers for the x-axis.
+# There are 1001 population records, from generation 0 to 1000.
+x_range <- 0:(nrow(output) - 1)
+
+```
+
+```{r}
+# Leave space on the right for the legend
+par(mar = c(5, 4, 4, 14), xpd = NA)
+
+# Total population
+plot(
+  x_range, rowSums(output),
+  type = "l",
+  col = "black",
+  lwd = 2,
+  ylim = c(0, max(rowSums(output))),
+  xlab = "Generation",
+  ylab = "Population size",
+  main = "Population dynamics"
+)
+
+# Type a and type A
+lines(x_range, output[, "a"], col = "darkgreen", lwd = 2)
+lines(x_range, output[, "A"], col = "red", lwd = 2)
+
+# Legend OUTSIDE the plot, on the right
+legend(
+  "topright",
+  inset = c(-0.55, 0),
+  legend = c("Total population", "a (usual)", "A (adapted)"),
+  col = c("black", "darkgreen", "red"),
+  lty = 1,
+  lwd = 2,
+  bty = "n",
+  xpd = NA
+)
+
+# Restore the standard margins
+par(mar = c(5, 4, 4, 2), xpd = FALSE)
+
+```
+
+```{r}
+# PLOTS 2: EFFECT OF MIGRATION
+
+# Migration rates to compare
+migration_rates <- c(1, 10^seq(-5, 0, by = 1))
+
+# Repeat simulations to account for random variation
+n_replicates <- 100
+
+# Store the mean results for each migration rate
+adapted_A <- numeric(length(migration_rates))
+mig_a <- 1000 * migration_rates # Expected number of migrating turtles per generation
+population_size <- numeric(length(migration_rates))
+all_results <- vector("list", length(migration_rates))
+
+
+for (j in seq_along(migration_rates)) {
+
+  # Store the final results of repeated simulations
+  results <- matrix(NA_real_, nrow = n_replicates, ncol = 3)
+
+  for (rep in seq_len(n_replicates)) {
+
+    sim <- simulate_pop(
+      N_init_a = 0,
+      N_init_A = 0,
+      decay_rate = 0.1,
+      sel_coeff = 0.2,
+      mut_rate = 0.001,
+      mig_rate = migration_rates[j], 
+      N_source_a = 1000,
+      t_max = max_gen,
+      carrying_capacity = 1000
+    )
+
+# Number of A and a turtles at the final generation
+    results[rep, 1] <- sim[nrow(sim), "A"]
+    
+    results[rep, 2] <- sim[nrow(sim), "a"]
+    
+# Total population at the final generation
+    results[rep, 3] <- sum(sim[nrow(sim), ])
+  }
+
+all_results[[j]] <- results
+
+# Calculate the mean across replicate simulations
+  adapted_A[j] <- mean(results[, 1])
+  mig_a [j] <- mean(results[, 2])
+  population_size[j] <- mean(results[, 3])
+}
+
+# PLOT 2: MIGRATION VS POPULATION TYPES AND TOTAL POPULATION
+
+# Leave space on the right for the legend
+par(mar = c(5, 4, 4, 14), xpd = NA)
+
+# Install once in the Console if needed: install.packages("beeswarm")
+if (!requireNamespace("beeswarm", quietly = TRUE)) {
+  stop('Please install beeswarm first: install.packages("beeswarm")')
+}
+
+# Set up axes without drawing the mean lines yet
+matplot(
+  seq_along(migration_rates),
+  cbind(adapted_A, mig_a, population_size),
+  type = "n", xaxt = "n",
+  xlim = c(0.5, length(migration_rates) + 0.5),
+  ylim = range(c(0, unlist(all_results)), finite = TRUE),
+  xlab = "Migration rate",
+  ylab = "Number of turtles",
+  main = "Effect of migration on population"
+)
+
+# Individual final-generation outcomes, behind the mean lines
+swarm_colors <- c("red", "blue", "darkgreen")
+for (k in 1:3) {
+  beeswarm::beeswarm(
+    lapply(all_results, function(x) x[, k]),
+    at = seq_along(migration_rates),
+    add = TRUE,
+    pch = 16,
+    cex = 0.45,
+    col = adjustcolor(swarm_colors[k], alpha.f = 0.25),
+    corral = "wrap",
+    corralWidth = 0.6,
+    xpd = FALSE
+  )
+}
+
+# Original mean lines and symbols on top
+matlines(
+  seq_along(migration_rates),
+  cbind(adapted_A, mig_a, population_size),
+  type = "b",
+  pch = c(19, 17, 15),
+  col = c("red", "blue", "darkgreen"),
+  lty = 1,
+  lwd = 2
+)
+axis(
+  side = 1,
+  at = seq_along(migration_rates),
+  labels = expression(0, 10^{-5}, 10^{-4}, 10^{-3},
+                      10^{-2}, 10^{-1}, 10^{0})
+)
+
+legend(
+  "topright",
+  inset = c(-0,65, 0),cex = 0.6,
+  legend = c("Adapted turtles (A)", "Migrating turtles (a)", "Total population (a + A)"),
+  col = c("red", "blue", "darkgreen"),
+  pch = c(19, 17, 15),
+  lty = 1,
+  lwd = 2,
+  bty = "n",
+  xpd = NA
+)
+
+# Restore the standard plotting margins, leave space on the right for the legend, if needed.
+par(mar = c(5, 4, 4, 2), xpd = FALSE)
+
+```
+
+# Total population size and frequencies
+
+```{r}
+# Calculate Frequencies
+# Calculate the total local population at each generation
+N_total <- output[, "a"] + output[, "A"]
+
+# Calculate the frequency of type a
+freq_a <- ifelse(
+  N_total > 0,
+  output[, "a"] / N_total,
+  NA
+)
+
+# Calculate the frequency of type A
+freq_A <- ifelse(
+  N_total > 0,
+  output[, "A"] / N_total,
+  NA
+)
+
+# Store the results in a data frame
+frequency_output <- data.frame(
+  Generations = 0:(nrow(output) - 1),
+  N_total = N_total,
+  freq_a = freq_a,
+  freq_A = freq_A
+)
+
+# Display the frequency results
+print(frequency_output)
+```
+
+## Implementation in a Shiny App
+This is the same model implemented as a Shiny App.
+```{r, echo=FALSE}
+# Check if 'shiny' package is installed, if not, install it
+if (! "shiny" %in% rownames(installed.packages())) {
+  install.packages("shiny")
+}
+
+# Check if 'shinyWidgets' package is installed, if not, install it
+if (! "shinyWidgets" %in% rownames(installed.packages())) {
+  install.packages("shinyWidgets")
+}
+
+# Load required libraries
+library(shiny)
+library(shinyWidgets)
+
+# Define the user interface (UI)
+ui <- fluidPage(
+  
+  titlePanel("Evolutionary Rescue Simulation"),
+  
+  sidebarLayout(
+    
+    sidebarPanel(
+      # Slider for the starting frequency of mutants (p)
+      sliderInput(inputId = "p",
+                  label = "Starting frequency of mutants p0:",
+                  min = 0,
+                  max = 0.05,
+                  value = 0,
+                  step = 0.001), 
+      helpText('This parameter determines the standing genetic variation. If it is 0, only new mutations can rescue the population'),
+      
+      br(),
+      
+      # Slider for the rate of population decline (r)
+      sliderInput(inputId = "r",
+                  label = "Rate of population decline r:",
+                  min = 0,
+                  max = 0.4,
+                  value = 0.05,
+                  step = 0.001),
+      helpText('This parameter determines how fast the population initially declines'),
+      
+      br(),
+      
+       # Slider for the rate of migration (m)
+      sliderInput(inputId = "m",
+                  label = "Rate of migration m:",
+                  min = 0,
+                  max = 0.4,
+                  value = 0.05,
+                  step = 0.001),
+      helpText('This parameter determines how many individuals migrate into the new Habitat'),
+      
+      br(),
+ 
+      # Slider for the selective advantage of mutants (s)
+      sliderInput(inputId = "s",
+                  label = "Selective advantage of mutants s:",
+                  min = 0,
+                  max = 0.4,
+                  value = 0.1,
+                  step = 0.001),
+      helpText('Advantage must be greater than decline rate (s>r) to lift fitness of mutants above 1.'),
+      
+      br(),
+      
+      # Slider with text input for mutation probability (u)
+      shinyWidgets::sliderTextInput("u","Mutation probability u:",
+                                    choices=c(0, 0.000001, 0.00001, 0.0001, 0.001),
+                                    selected=0.000001,
+                                    grid = 'T'),
+      helpText('This is the probability at which a beneficial mutation occurs per new offspring'),
+      
+      br(),
+
+      # Slider for the starting population size (N0)
+      sliderInput(inputId = "N0",
+                  label = "Starting population size N0:",
+                  min = 1,
+                  max = 1000,
+                  value = 100,
+                  step =10),
+      helpText('This is the population size at time 0'),
+      
+      br(),
+      
+      # Slider for the number of generations to simulate
+      sliderInput(inputId = "gens",
+                  label = "Number of generations to simulate:",
+                  min = 1,
+                  max = 200,
+                  value = 100),
+      helpText('This determines how long the simulation is run'),
+      
+      br(),
+                  
+      # Slider for the number of populations to simulate
+      sliderInput(inputId = "reps",
+                  label = "Number of populations to simulate:",
+                  min = 1,
+                  max = 100,
+                  value = 5),
+      helpText('This determines how many times the simulation is run, i.e., how many trajectories will appear in the plot'),
+      
+      br(),
+      
+      # Button to recalculate the simulation
+      actionButton(inputId = "recalc",
+                   label = "Recalculate"),
+      helpText('Use this button to rerun the simulation without changing the parameters'),
+      
+      br()
+    ),
+
+    mainPanel(
+      
+      # Plot to display the simulation results
+      plotOutput(outputId = "plot", height = '400px'),
+      
+      # Text output for survivor percentage
+      textOutput(outputId = "percentage"),
+      
+      # Text output for expected rescue probability
+      textOutput(outputId = "expected")
+    )
+  )
+)
+
+# Define the server logic
+server <- function(input, output) {
+
+  # Function to forward a single population one generation
+  forward <- function(N_a, N_A, r, s, u) {
+    offsp_a = rpois(1, N_a * (1-r))
+    offsp_A = rpois(1, N_A * (1-r+s))
+    mut_a_to_A = rpois(1, N_a * u)
+    
+    N_a_new <- max(offsp_a - mut_a_to_A, 0)
+    N_A_new <-  ifelse(N_A < 2*input$N0, offsp_A + mut_a_to_A, 2*input$N0)
+    
+    return(c(N_a_new, N_A_new))
+  }
+  
+  # Function to simulate one population
+  simulate_1pop <- function(N0, p, r, s, u, gens) {
+    Ns = c(N0*(1-p), N0*p)
+    for (i in 1:gens) {
+      nextN = forward(Ns[2*i-1], Ns[2*i], r, s, u)
+      Ns = c(Ns, nextN) 
+    }
+
+    return(Ns)	# odd indices are N_a, even indices N_A
+  }
+  
+  # Function to convert split 'Ns' from simulate_1pop to a list of overall population sizes
+  add_Ns <- function(Ns) {
+    new_Ns = vector()
+    for (i in 1:(length(Ns)/2)) new_Ns = append(new_Ns, Ns[2*i - 1] + Ns[2*i])
+
+    return(new_Ns)
+  }
+  
+  # Function to simulate input$reps populations and store them as columns of a matrix
+  simulate_pops <- function() {
+    input$recalc # make simulate_pops dependent on recalc-button in order to update when pressed
+    out = vector()
+    for (i in 1:input$reps) out = append(out, add_Ns(simulate_1pop(input$N0, input$p, input$r, input$s, input$u, input$gens)))
+    M = matrix(data=out, ncol = input$reps, nrow = input$gens+1)
+    return(M)	
+  }
+  
+  # Reactive expression to calculate a set of results whenever a parameter is changed, or recalc-button is pressed
+  outcomes <- reactive(simulate_pops())
+  
+  # Function to generate plot from outcomes
+  output$plot <- renderPlot({
+    # Generate plot object
+  	plot(0,
+  	     0,
+  	     xlim = c(0,input$gens),
+  	     ylim = c(0,input$N0),
+  	     type = "n",
+  	     xlab = "Generation",
+  	     ylab = "Population Size")
+    
+    grid()
+    
+    # Plot title
+    mtext(text = "Simulated population sizes over time",
+          font = 2,
+          cex = 1.5,
+          side = 3,
+          adj = 0.1,
+          line = 2,
+          col = "darkslategray")
+    
+    # Draw points
+    apply(outcomes(),
+          2,
+          points,
+          x = 0:input$gens,
+          pch = 19,
+          col = "deepskyblue4")
+    
+    # Draw lines
+  	apply(outcomes(),
+  	      2,
+  	      lines,
+  	      x = 0:input$gens,
+  	      col = "deepskyblue4")
+  })
+  
+  # Display survivor percentage from outcomes
+  output$percentage <- renderText({
+      lastGen = outcomes()[input$gens+1,]
+  		saved = length(lastGen[lastGen >= input$N0])
+  		paste('Population rebound: ', saved, '/', input$reps, ' (', round(saved/input$reps*100, 2), '%)', sep = '')
+  })
+  
+  # Display expectation value after Orr & Unckless 2014
+  output$expected <- renderText({
+    formula = max(0, (1 - exp(-2*input$N0*(input$s - input$r)*(input$p*input$r + input$u) / input$r)) * 100)
+    paste('Expected rescue probability:', round(formula, 2), '%')
+  })
+}
+
+# Create the Shiny app
+shinyApp(ui = ui, server = server)
+```
+
+
+# Questions & Answers
+Can Migration help adapt to warming?
+How fast can they adapt?
+What is the maximum migration needed to stabilize the population?
+How many generation needed to reach the state population after migration happens?
+What factor that influences the migration rate and needed  for added for next Model?
+Is immigration going to help the population adapt faster?
+In what condition can the population survive?
+Is immigration beneficial?
+How long can the local population sustain itself through immigration?
+How strong does the selection needs to be for the adapted ones to survive?
+
+# Results
+# Discussion
+As we know that Temperatures are rising our first goal was to look at the hatchling success or failure because of higher temperatures there is more and more female hatchlings than males and this would also impact the reproduction rate and success of a reproductive event. Because of this sea-turtles may migrate more to find a partner in other sea-turtle populations and as temperatures are rising sea-turtles do not only have to change their migration routes but they may also have to somehow adapt as of how they would adapt woud have been very interesting to see in a model and how ressources, migration and maybe a mutation that leads to an adaptation to their changing/warming habitat and also how all this and the fact that there is less and less success of hatchlings and even when there is success feminization of the population is getting higher and higher what impact would this have in general on animals where the sex ratio is decided by the temperature.
+The Model examines whether adaptation can rescue a declining sea-turtle population and how immigration of non-adapted urtles influences population persistence and the spread of the adapted one through adaptation and imigration.
