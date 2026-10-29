@@ -4,17 +4,15 @@ author: "Fadly Muhammad
          Sara Costanzo"
 date: "2026-10-15"
 ---
+Index
 
-3.  The report 3.1 Structure and length The report contains the following sections, in this order:
-4.  Title
-5.  Authors (the author names are stated below the title)
-6.  Abstract
-7.  Introduction
-8.  Model & Methods
-9.  Questions & Answers
-10. Results
-11. Discussion
-12. References The report contains no more than 3000 words of main text (i.e., excluding code)
+1.  Abstract
+2.  Introduction
+3.  Model & Methods
+4.  Questions & Answers
+5. Results
+6. Discussion
+7. References
 
 # Abstract
 
