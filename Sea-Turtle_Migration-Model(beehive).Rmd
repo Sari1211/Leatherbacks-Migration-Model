@@ -20,7 +20,7 @@ This is a simplified model. decay_rate represents the negative effect of warming
 # Parameters, initial conditions and variables
 
 | Code | Meaning in the Sea-Turtle Model |
-|----|----|
+|------------------------------------|------------------------------------|
 | `N_a` | Number of local turtles on the warming beach |
 | `N_A` | Number of adapted-type turtles on the warming beach |
 | `decay_rate` | Negative effect of warming on expected population growth |
@@ -41,6 +41,58 @@ The first function calculates what happens over one generation. The order of eve
 3.  Generate mutations from type `a` to type `A` among the `a` offspring.
 4.  Generate immigrants of type `a` from the source beach.
 5.  Calculate the population sizes `a` and `A` for the next generation.
+
+```{r load-parameters}
+parameter_file <- "Base_Parameters.csv"
+parameters <- read.csv(parameter_file, stringsAsFactors = FALSE,
+                       check.names = FALSE)
+
+required_columns <- c("scenario", "N_init_a", "N_init_A", "decay_rate",
+                      "sel_coeff", "mut_rate", "mig_rate", "N_source_a",
+                      "t_max", "carrying_capacity", "n_replicates")
+missing_columns <- setdiff(required_columns, names(parameters))
+if (length(missing_columns) > 0) {
+  stop("Missing CSV columns: ", paste(missing_columns, collapse = ", "))
+}
+if (anyNA(parameters$scenario) || anyDuplicated(parameters$scenario)) {
+  stop("Scenario names must be present and unique.")
+}
+numeric_columns <- setdiff(required_columns, "scenario")
+for (column in numeric_columns) {
+  values <- parameters[[column]]
+  if (!is.numeric(values) || any(!is.finite(values)) || any(values < 0)) {
+    stop("Column '", column, "' must contain finite, non-negative numbers.")
+  }
+}
+integer_columns <- c("N_init_a", "N_init_A", "N_source_a", "t_max",
+                     "carrying_capacity", "n_replicates")
+for (column in integer_columns) {
+  if (any(parameters[[column]] != floor(parameters[[column]]))) {
+    stop("Column '", column, "' must contain whole numbers.")
+  }
+}
+if (any(parameters$carrying_capacity < 1) ||
+    any(parameters$n_replicates < 1) ||
+    any(parameters$decay_rate > 1) || any(parameters$mut_rate > 1)) {
+  stop("Capacity and replicates must be positive; decay and mutation rates must be <= 1.")
+}
+if (sum(parameters$scenario == "single_run") != 1) {
+  stop("The CSV must contain exactly one 'single_run' row.")
+}
+single_parameters <- parameters[parameters$scenario == "single_run", , drop = FALSE]
+migration_parameters <- parameters[startsWith(parameters$scenario, "mig_"), , drop = FALSE]
+if (nrow(migration_parameters) == 0) stop("Add at least one 'mig_' scenario.")
+
+# Reuse a CSV row as named arguments for simulate_pop().
+# R resolves simulate_pop when this helper is called, after its definition below.
+run_scenario <- function(parameter_row) {
+  argument_names <- c("N_init_a", "N_init_A", "decay_rate", "sel_coeff",
+                      "mut_rate", "mig_rate", "N_source_a", "t_max",
+                      "carrying_capacity")
+  do.call(simulate_pop, as.list(parameter_row[1, argument_names]))
+}
+
+```
 
 ```{r}
 # FUNCTION 1: SIMULATE ONE GENERATION
@@ -184,7 +236,7 @@ output <- simulate_pop(
   decay_rate = 0.1,         # Negative effect of warming
   sel_coeff = 0.2,          # Relative growth advantage of type A
   mut_rate = 0.001,         # Mutation rate from a to A
-  mig_rate = 5,          # Migration rate from the source beach
+  mig_rate = 0.1,          # Migration rate from the source beach
   N_source_a = 1000,        # Number of turtles in the source population
   t_max = max_gen,          # Number of generations to simulate
   carrying_capacity = 1000  # Maximum population size for the offspring step
@@ -235,7 +287,7 @@ lines(x_range, output[, "A"], col = "red", lwd = 2)
 legend(
   "topright",
   inset = c(-0.55, 0),
-  legend = c("Total population", "a (usual)", "A (adapted)"),
+  legend = c("Total population", "a (non adapted)", "A (adapted)"),
   col = c("black", "darkgreen", "red"),
   lty = 1,
   lwd = 2,
@@ -317,7 +369,7 @@ matplot(
   type = "n", xaxt = "n",
   xlim = c(0.5, length(migration_rates) + 0.5),
   ylim = range(c(0, unlist(all_results)), finite = TRUE),
-  xlab = "Average number of migrating turtles per generation",
+  xlab = "Migration rates",
   ylab = "Number of turtles",
   main = "Effect of migration on population"
 )
@@ -343,7 +395,7 @@ matlines(
   seq_along(migration_rates),
   cbind(adapted_A, mig_a, population_size),
   type = "b",
-  pch = c(19, 17, 15),
+pch = c(19, 17, 15),
   col = c("red", "blue", "darkgreen"),
   lty = 1,
   lwd = 2

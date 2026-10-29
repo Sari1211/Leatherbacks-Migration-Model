@@ -11,7 +11,7 @@ How does the immigration rate from a cool source beach affect the number of usua
 ## Turtle types
 
 | Type | Description |
-|-----------------------|-------------------------------------------------|
+|-----------------------|------------------------------------------------|
 | `a` | Usual turtles. Arrive as immigrants from the cool beach. Their expected offspring number is reduced by `decay_rate`. |
 | `A` | Adapted turtles. Arise only through mutation from `a`. Their growth depends on `sel_coeff - decay_rate` and is density-dependent. |
 
@@ -47,7 +47,7 @@ All parameter sets are stored in `parameters.csv`, one scenario per row that can
 
 rm(list=ls())
 
-### 2 Set the directory 
+### 2 Set the directory
 
 setwd() #set the directory into the location where we put our data
 
@@ -55,11 +55,13 @@ setwd() #set the directory into the location where we put our data
 
 install.packages("beeswarm")
 
-### 4. Load the packages 
+### 4. Load the packages
 
 library(beeswarm)
 
 ### 5 Load the data & parameters
+
+parameters \<- read.csv()
 
 ## Order of events in one generation
 
