@@ -3,6 +3,9 @@ title: "Evolutionary rescue with migration: a sea turtle case study"
 author: "Fadly Muhammad
          Sara Costanzo"
 date: "2026-10-15"
+editor_options: 
+  markdown: 
+    wrap: sentence
 ---
 
 3.  The report 3.1 Structure and length The report contains the following sections, in this order:
@@ -18,14 +21,16 @@ date: "2026-10-15"
 
 # Abstract
 
-
 # Introduction
 
-In these Model we want to show in a very simplified way how migration can help a population or not to survive or adapt. Our very first Idea treated the subject of global warming and how these rising temperatures are impacting on migration routes of sea-turtles. And by simulating sea-turtles migrating to a warmer habitat and adapting we want to simulate the changing habitat because of climate warming.
+In these Model we want to show in a very simplified way how migration can help a population or not to survive or adapt.
+Our very first Idea treated the subject of global warming and how these rising temperatures are impacting on migration routes of sea-turtles.
+And by simulating sea-turtles migrating to a warmer habitat and adapting we want to simulate the changing habitat because of climate warming.
 
 # Model question and assumptions
 
-Our model explores how migration from a source beach affects the populations of usual and adapted turtles on a beach affected by warming. We compare the two turtle types over generations and investigate how different migration rates change the final population sizes.
+Our model explores how migration from a source beach affects the populations of usual and adapted turtles on a beach affected by warming.
+We compare the two turtle types over generations and investigate how different migration rates change the final population sizes.
 
 The model represents two types:
 
@@ -33,49 +38,106 @@ Type a (immigrating turtles from a cool beach): their expected offspring number 
 
 Type A (adapted turtles to the new habitat warming beach): their expected growth is affected by warming and by the relative advantage specified by sel_coeff.
 
-New A turtles can arise through mutation from a. In the current code, migrants from the source/cool beach are type a turtles, not adapted type A turtles. The source population is treated as constant.
+New A turtles can arise through mutation from a.
+In the current code, migrants from the source/cool beach are type a turtles, not adapted type A turtles.
+The source population is treated as constant.
 
-This is a simplified model. decay_rate represents the negative effect of warming rather than simulating ocean temperature directly. Migration is represented by a rate of immigration, not by explicitly modelling two different routes or route-specific mortality.
+This is a simplified model.
+decay_rate represents the negative effect of warming rather than simulating ocean temperature directly.
+Migration is represented by a rate of immigration, not by explicitly modelling two different routes or route-specific mortality.
 
 # Parameters, initial conditions and variables
 
-+--------------------------------------+--------------------------------------------------------------+
-| Code                                 | Meaning in the Sea-Turtle Model                              |
-+======================================+==============================================================+
-| \# Variables                         |                                                              |
-+--------------------------------------+--------------------------------------------------------------+
-| ------------                         | ----------                                                   |
-+--------------------------------------+--------------------------------------------------------------+
-| `N_a`                                | Number of local turtles on the warming beach                 |
-+--------------------------------------+--------------------------------------------------------------+
-| `N_A`                                | Number of adapted-type turtles on the warming beach          |
-+--------------------------------------+--------------------------------------------------------------+
-| `decay_rate`                         | Negative effect of warming on expected population growth     |
-+--------------------------------------+--------------------------------------------------------------+
-| `sel_coeff`                          | Relative growth advantage of the adapted type                |
-+--------------------------------------+--------------------------------------------------------------+
-| `mut_rate`                           | Rate at which the adapted type arises through new mutations  |
-+--------------------------------------+--------------------------------------------------------------+
-| `mig_rate`                           | Rate of arrival of adapted individuals from the cooler beach |
-+--------------------------------------+--------------------------------------------------------------+
-| `N_source_a`                         | Size of source/cool beach population                         |
-+--------------------------------------+--------------------------------------------------------------+
-| `carrying_capacity`                  | maximum population size the warming habitat can support      |
-+--------------------------------------+--------------------------------------------------------------+
-| ##### \# Parameters                  |                                                              |
-+--------------------------------------+--------------------------------------------------------------+
-| ------------------------------------ | ------------------------------------                         |
-+--------------------------------------+--------------------------------------------------------------+
++--------------------------------------------------------------------------+--------------------------------------------------------------------------+
+| Code                                                                     | Meaning in the Sea-Turtle Model                                          |
++==========================================================================+==========================================================================+
+| \# Variables                                                             |                                                                          |
++--------------------------------------------------------------------------+--------------------------------------------------------------------------+
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
++--------------------------------------------------------------------------+--------------------------------------------------------------------------+
+| `N_a`                                                                    | Number of local turtles on the warming beach                             |
++--------------------------------------------------------------------------+--------------------------------------------------------------------------+
+| `N_A`                                                                    | Number of adapted-type turtles on the warming beach                      |
++--------------------------------------------------------------------------+--------------------------------------------------------------------------+
+| `decay_rate`                                                             | Negative effect of warming on expected population growth                 |
++--------------------------------------------------------------------------+--------------------------------------------------------------------------+
+| `sel_coeff`                                                              | Relative growth advantage of the adapted type                            |
++--------------------------------------------------------------------------+--------------------------------------------------------------------------+
+| `mut_rate`                                                               | Rate at which the adapted type arises through new mutations              |
++--------------------------------------------------------------------------+--------------------------------------------------------------------------+
+| `mig_rate`                                                               | Rate of arrival of adapted individuals from the cooler beach             |
++--------------------------------------------------------------------------+--------------------------------------------------------------------------+
+| `N_source_a`                                                             | Size of source/cool beach population                                     |
++--------------------------------------------------------------------------+--------------------------------------------------------------------------+
+| `carrying_capacity`                                                      | maximum population size the warming habitat can support                  |
++--------------------------------------------------------------------------+--------------------------------------------------------------------------+
+| ##### \# Parameters                                                      |                                                                          |
++--------------------------------------------------------------------------+--------------------------------------------------------------------------+
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
++--------------------------------------------------------------------------+--------------------------------------------------------------------------+
 
 # Simulate One Generation
 
-The first function calculates what happens over one generation. The order of events in our code is:
+The first function calculates what happens over one generation.
+The order of events in our code is:
 
 1.  Generate offspring for both types.
 2.  If the total offspring exceeds carrying capacity, reduce the offspring numbers to the limit.
 3.  Generate mutations from type `a` to type `A` among the `a` offspring.
 4.  Generate immigrants of type `a` from the source beach.
 5.  Calculate the population sizes `a` and `A` for the next generation.
+
+```{r load-parameters}
+parameter_file <- "parameters.csv"
+parameters <- read.csv(parameter_file, stringsAsFactors = FALSE,
+                       check.names = FALSE)
+
+required_columns <- c("scenario", "N_init_a", "N_init_A", "decay_rate",
+                      "sel_coeff", "mut_rate", "mig_rate", "N_source_a",
+                      "t_max", "carrying_capacity", "n_replicates")
+missing_columns <- setdiff(required_columns, names(parameters))
+if (length(missing_columns) > 0) {
+  stop("Missing CSV columns: ", paste(missing_columns, collapse = ", "))
+}
+if (anyNA(parameters$scenario) || anyDuplicated(parameters$scenario)) {
+  stop("Scenario names must be present and unique.")
+}
+numeric_columns <- setdiff(required_columns, "scenario")
+for (column in numeric_columns) {
+  values <- parameters[[column]]
+  if (!is.numeric(values) || any(!is.finite(values)) || any(values < 0)) {
+    stop("Column '", column, "' must contain finite, non-negative numbers.")
+  }
+}
+integer_columns <- c("N_init_a", "N_init_A", "N_source_a", "t_max",
+                     "carrying_capacity", "n_replicates")
+for (column in integer_columns) {
+  if (any(parameters[[column]] != floor(parameters[[column]]))) {
+    stop("Column '", column, "' must contain whole numbers.")
+  }
+}
+if (any(parameters$carrying_capacity < 1) ||
+    any(parameters$n_replicates < 1) ||
+    any(parameters$decay_rate > 1) || any(parameters$mut_rate > 1)) {
+  stop("Capacity and replicates must be positive; decay and mutation rates must be <= 1.")
+}
+if (sum(parameters$scenario == "single_run") != 1) {
+  stop("The CSV must contain exactly one 'single_run' row.")
+}
+single_parameters <- parameters[parameters$scenario == "single_run", , drop = FALSE]
+migration_parameters <- parameters[startsWith(parameters$scenario, "mig_"), , drop = FALSE]
+if (nrow(migration_parameters) == 0) stop("Add at least one 'mig_' scenario.")
+
+# Reuse a CSV row as named arguments for simulate_pop().
+# R resolves simulate_pop when this helper is called, after its definition below.
+run_scenario <- function(parameter_row) {
+  argument_names <- c("N_init_a", "N_init_A", "decay_rate", "sel_coeff",
+                      "mut_rate", "mig_rate", "N_source_a", "t_max",
+                      "carrying_capacity")
+  do.call(simulate_pop, as.list(parameter_row[1, argument_names]))
+}
+
+```
 
 ```{r}
 # FUNCTION 1: SIMULATE ONE GENERATION
@@ -441,7 +503,9 @@ print(frequency_output)
 ```
 
 ## Implementation in a Shiny App
+
 This is the same model implemented as a Shiny App.
+
 ```{r, echo=FALSE}
 # Check if 'shiny' package is installed, if not, install it
 if (! "shiny" %in% rownames(installed.packages())) {
@@ -673,13 +737,13 @@ server <- function(input, output) {
 shinyApp(ui = ui, server = server)
 ```
 
-
 # Questions & Answers
+
 Can Migration help adapt to warming?
 How fast can they adapt?
 What is the maximum migration needed to stabilize the population?
 How many generation needed to reach the state population after migration happens?
-What factor that influences the migration rate and needed  for added for next Model?
+What factor that influences the migration rate and needed for added for next Model?
 Is immigration going to help the population adapt faster?
 In what condition can the population survive?
 Is immigration beneficial?
@@ -687,6 +751,9 @@ How long can the local population sustain itself through immigration?
 How strong does the selection needs to be for the adapted ones to survive?
 
 # Results
+
 # Discussion
-As we know that Temperatures are rising our first goal was to look at the hatchling success or failure because of higher temperatures there is more and more female hatchlings than males and this would also impact the reproduction rate and success of a reproductive event. Because of this sea-turtles may migrate more to find a partner in other sea-turtle populations and as temperatures are rising sea-turtles do not only have to change their migration routes but they may also have to somehow adapt as of how they would adapt woud have been very interesting to see in a model and how ressources, migration and maybe a mutation that leads to an adaptation to their changing/warming habitat and also how all this and the fact that there is less and less success of hatchlings and even when there is success feminization of the population is getting higher and higher what impact would this have in general on animals where the sex ratio is decided by the temperature.
+
+As we know that Temperatures are rising our first goal was to look at the hatchling success or failure because of higher temperatures there is more and more female hatchlings than males and this would also impact the reproduction rate and success of a reproductive event.
+Because of this sea-turtles may migrate more to find a partner in other sea-turtle populations and as temperatures are rising sea-turtles do not only have to change their migration routes but they may also have to somehow adapt as of how they would adapt woud have been very interesting to see in a model and how ressources, migration and maybe a mutation that leads to an adaptation to their changing/warming habitat and also how all this and the fact that there is less and less success of hatchlings and even when there is success feminization of the population is getting higher and higher what impact would this have in general on animals where the sex ratio is decided by the temperature.
 The Model examines whether adaptation can rescue a declining sea-turtle population and how immigration of non-adapted urtles influences population persistence and the spread of the adapted one through adaptation and imigration.
