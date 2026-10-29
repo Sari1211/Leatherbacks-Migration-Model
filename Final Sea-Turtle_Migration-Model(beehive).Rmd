@@ -7,15 +7,16 @@ editor_options:
   markdown: 
     wrap: sentence
 ---
+
 Index
 
 1.  Abstract
 2.  Introduction
 3.  Model & Methods
 4.  Questions & Answers
-5. Results
-6. Discussion
-7. References
+5.  Results
+6.  Discussion
+7.  References
 
 # Abstract
 
@@ -85,56 +86,46 @@ The order of events in our code is:
 4.  Generate immigrants of type `a` from the source beach.
 5.  Calculate the population sizes `a` and `A` for the next generation.
 
-```{r load-parameters}
+```{# Specify the combined CSV file.}
 parameter_file <- "parameters.csv"
-parameters <- read.csv(parameter_file, stringsAsFactors = FALSE,
-                       check.names = FALSE)
 
-required_columns <- c("scenario", "N_init_a", "N_init_A", "decay_rate",
-                      "sel_coeff", "mut_rate", "mig_rate", "N_source_a",
-                      "t_max", "carrying_capacity", "n_replicates")
-missing_columns <- setdiff(required_columns, names(parameters))
-if (length(missing_columns) > 0) {
-  stop("Missing CSV columns: ", paste(missing_columns, collapse = ", "))
-}
-if (anyNA(parameters$scenario) || anyDuplicated(parameters$scenario)) {
-  stop("Scenario names must be present and unique.")
-}
-numeric_columns <- setdiff(required_columns, "scenario")
-for (column in numeric_columns) {
-  values <- parameters[[column]]
-  if (!is.numeric(values) || any(!is.finite(values)) || any(values < 0)) {
-    stop("Column '", column, "' must contain finite, non-negative numbers.")
-  }
-}
-integer_columns <- c("N_init_a", "N_init_A", "N_source_a", "t_max",
-                     "carrying_capacity", "n_replicates")
-for (column in integer_columns) {
-  if (any(parameters[[column]] != floor(parameters[[column]]))) {
-    stop("Column '", column, "' must contain whole numbers.")
-  }
-}
-if (any(parameters$carrying_capacity < 1) ||
-    any(parameters$n_replicates < 1) ||
-    any(parameters$decay_rate > 1) || any(parameters$mut_rate > 1)) {
-  stop("Capacity and replicates must be positive; decay and mutation rates must be <= 1.")
-}
-if (sum(parameters$scenario == "single_run") != 1) {
-  stop("The CSV must contain exactly one 'single_run' row.")
-}
-single_parameters <- parameters[parameters$scenario == "single_run", , drop = FALSE]
-migration_parameters <- parameters[startsWith(parameters$scenario, "mig_"), , drop = FALSE]
-if (nrow(migration_parameters) == 0) stop("Add at least one 'mig_' scenario.")
+# Choose one parameter set: baseline, high, medium, or verylow.
+selected_set <- "high"
 
-# Reuse a CSV row as named arguments for simulate_pop().
-# R resolves simulate_pop when this helper is called, after its definition below.
-run_scenario <- function(parameter_row) {
-  argument_names <- c("N_init_a", "N_init_A", "decay_rate", "sel_coeff",
-                      "mut_rate", "mig_rate", "N_source_a", "t_max",
-                      "carrying_capacity")
-  do.call(simulate_pop, as.list(parameter_row[1, argument_names]))
+# Read all parameter sets from the CSV.
+all_parameters <- read.csv(
+  parameter_file,
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+
+# Check whether the parameter-set column exists.
+if (!"parameter_set" %in% names(all_parameters)) {
+  stop("Missing CSV column: parameter_set")
 }
 
+# Check whether every row has a parameter-set name.
+if (anyNA(all_parameters$parameter_set) ||
+    any(trimws(all_parameters$parameter_set) == "")) {
+  stop("Every row must have a parameter_set name.")
+}
+
+# Check whether the selected parameter set exists.
+if (!selected_set %in% all_parameters$parameter_set) {
+  stop(
+    "Unknown parameter set: ", selected_set,
+    ". Available sets: ",
+    paste(unique(all_parameters$parameter_set), collapse = ", ")
+  )
+}
+
+# Select all rows belonging to the chosen parameter set.
+# The remaining code uses only these selected rows.
+parameters <- all_parameters[
+  all_parameters$parameter_set == selected_set,
+  ,
+  drop = FALSE
+]
 ```
 
 ```{r}
