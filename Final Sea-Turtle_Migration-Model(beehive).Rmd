@@ -307,9 +307,6 @@ print(tail(output_table), row.names = FALSE)
 # There are 1001 population records, from generation 0 to 1000.
 x_range <- 0:(nrow(output) - 1)
 
-```
-
-```{r}
 # Leave space on the right for the legend
 par(mar = c(5, 4, 4, 14), xpd = NA)
 
@@ -455,7 +452,7 @@ axis(
 
 legend(
   "topright",
-  inset = c(-0,65, 0),cex = 0.6,
+  inset = c(-0,85, 0),cex = 0.6,
   legend = c("Adapted turtles (A)", "Migrating turtles (a)", "Total population (a + A)"),
   col = c("red", "blue", "darkgreen"),
   pch = c(19, 17, 15),
