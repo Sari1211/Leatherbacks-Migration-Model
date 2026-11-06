@@ -6,12 +6,12 @@ File: `Sea-Turtle_Migration-Model(beehive).Rmd`
 
 ## Model question
 
-How does the immigration rate from a cool source beach affect the number of usual (type `a`) and adapted (type `A`) turtles on a warming beach, and the total population size, after many generations?
+How does immigration from a source population affect the demographic recovery and the establishment of an adapted type in a local sea-turtle population exposed to warming-related stress?
 
 ## Turtle types
 
 | Type | Description |
-|-----------------------|-------------------------------------------------|
+|-----------------------|------------------------------------------------|
 | `a` | Usual turtles. Arrive as immigrants from the cool beach. Their expected offspring number is reduced by `decay_rate`. |
 | `A` | Adapted turtles. Arise only through mutation from `a`. Their growth depends on `sel_coeff - decay_rate` and is density-dependent. |
 
@@ -47,7 +47,7 @@ All parameter sets are stored in `parameters.csv`, one scenario per row that can
 
 rm(list=ls())
 
-### 2 Set the directory 
+### 2 Set the directory
 
 setwd() #set the directory into the location where we put our data
 
@@ -55,7 +55,7 @@ setwd() #set the directory into the location where we put our data
 
 install.packages("beeswarm")
 
-### 4. Load the packages 
+### 4. Load the packages
 
 library(beeswarm)
 
