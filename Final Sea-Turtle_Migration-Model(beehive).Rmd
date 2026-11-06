@@ -13,77 +13,77 @@ Index
 2.  Introduction
 3.  Model & Methods
 4.  Questions & Answers
-5. Results
-6. Discussion
-7. References
+5.  Results
+6.  Discussion
+7.  References
 
 # Abstract
 
+Climate change threatens sea turtles through changes in reproductive conditions and the marine environments they use during migration. Warmer incubation temperatures can reduce hatching success and alter hatchling sex ratios, while ocean warming can also change the thermal conditions experienced along migration corridors and shift suitable habitats. We developed a simplified stochastic, discrete-generation model to investigate how immigration from a constant source population affects a local sea-turtle population exposed to warming-related demographic stress. The local population contains two abstract types: type *a*, whose expected reproduction is reduced by environmental stress, and type *A*, which has a relative reproductive advantage and can arise from type *a* through mutation. All immigrants from the source population are assumed to be type *a*. We compared population trajectories and demographic and adaptive outcomes across immigration rates over 200 generations. The model illustrates that immigration can improve local population persistence and recovery, but very high immigration can maintain a large population while reducing the relative frequency of the adapted type. Thus, demographic recovery and adaptation do not necessarily occur together. The model is conceptual: it does not explicitly simulate sea temperature, nesting phenology, sex ratios, alternative migration routes or mortality along routes. Its purpose is to explore a possible trade-off between demographic support and local adaptation, not to make a quantitative prediction for wild sea-turtle populations.
+
 # Introduction
 
-In these Model we want to show in a very simplified way how migration can help a population or not to survive or adapt.
-Our very first Idea treated the subject of global warming and how these rising temperatures are impacting on migration routes of sea-turtles.
-And by simulating sea-turtles migrating to a warmer habitat and adapting we want to simulate the changing habitat because of climate warming.
+In this model, we want to show in a simplified way how migration can help a population survive and adapt to changing environmental conditions, and whether immigration is always beneficial for a population.
+
+Our initial idea focused on global warming and how rising temperatures are affecting sea turtles, particularly their reproductive success and migration routes. We were interested in simulating sea turtles moving between different habitats and adapting to warmer environmental conditions, in order to explore how populations might respond to climate change.
+
+Climate change affects sea turtles both on nesting beaches and in the marine environments they use throughout their life cycle. Temperature is especially important during incubation because it influences embryonic development, hatchling sex ratios and hatching success. Fuentes et al. (2024) examined whether shifts in nesting phenology could compensate for projected warming. Their results indicate that the expected shift towards earlier nesting will not be sufficient to maintain current incubation temperatures or hatching success at a substantial proportion of the studied sites. This suggests that changes in the timing of reproduction alone may not be enough to protect sea-turtle populations from climate-related impacts.
+
+Climate change can also affect turtles while they are migrating. Almpanidou et al. (2019) investigated thermal conditions along four post-nesting migration corridors used by female turtles (Caretta caretta) in the Mediterranean. They identified strong thermal heterogeneity along the corridors and projected increasing sea-surface temperatures. Their results also suggest that starting migration earlier may not allow turtles to experience the same thermal conditions as today. Therefore, considering only nesting or foraging areas may overlook important environmental changes that occur during migration.
+
+Climate-driven changes in suitable habitats may also alter where sea turtles are found and the risks they encounter. Duquesne and Fournier (2025) projected changes in the distribution of sea-turtle hotspots and examined their overlap with shipping activity and marine protected areas. Their study highlights that future suitable habitats may not necessarily be safer habitats: some newly suitable areas may overlap with intense vessel traffic, while many current hotspots are not covered by protected areas. Together, these studies show that climate change can affect reproduction, migration environments and the spatial distribution of sea turtles.
+
+These changes raise questions about the role of movement between populations. Immigration from another area could support a local population by adding individuals when local reproduction is reduced. However, immigrants may not necessarily have the same traits as individuals that are better suited to the environmental conditions at the receiving site. A high influx of individuals could therefore increase population size without necessarily increasing the frequency of locally adapted individuals.
+
+Based on this idea, we developed a simplified model with two types of individuals: a non-adapted type (a) and an adapted type (A), which has a reproductive advantage under the new environmental conditions. Type A can arise through mutation, while immigration from a source population introduces additional non-adapted individuals into the local population. Although our initial idea also involved changing migration routes and moving towards warmer habitats, the model presented here focuses specifically on how one-way immigration influences population persistence and the establishment of the adapted type.
+
+Our main research question is:
+
+**How does immigration from a source population affect the demographic recovery and the establishment of an adapted type in a local sea-turtle population exposed to warming-related environmental stress?**
+
+We investigate three related questions:
+
+1. Does increasing immigration improve the probability that the local population remains present and recovers to its initial size?
+2. Does immigration also increase the representation of the adapted type, or can high immigration reduce its relative frequency?
+3. Is there an intermediate immigration rate that provides demographic support while still allowing the adapted type to become established?
+
+We expect that low immigration rates will provide too few individuals to compensate for the negative effects of environmental stress. Intermediate immigration rates may improve both population recovery and the establishment of type A. At very high immigration rates, however, the total population may remain large while the proportion of type A decreases, because all immigrants are assumed to belong to type a.
 
 # Model question and assumptions
 
-Our model explores how migration from a source beach affects the populations of usual and adapted turtles on a beach affected by warming.
-We compare the two turtle types over generations and investigate how different migration rates change the final population sizes.
+Our model explores how immigration from a source beach affects the population of non-adapted and adapted sea turtles on a local beach exposed to environmental warming. We compare the two turtle types over several generations and investigate how different immigration rates influence population size, persistence and the establishment of the adapted type.
 
-The model represents two types:
+The model represents two conceptual populations: a local population on a beach affected by warming and a source population on a cooler, more favourable beach but also affected by warming or overpopulation. Only the local population is simulated dynamically. The source population is assumed to remain constant and continuously supplies immigrants to the local population.
 
-Type a (immigrating turtles from a cool beach): their expected offspring number is reduced by decay_rate.
+The local population consists of two types:
 
-Type A (adapted turtles to the new habitat warming beach): their expected growth is affected by warming and by the relative advantage specified by sel_coeff.
+*Type a (non-adapted turtles):* These represent turtles arriving from the cooler source beach as well as individuals already living on the local beach. Their expected offspring production is reduced by the warming-related decline rate (`decay_rate`).
+*Type A (adapted turtles):* These represent turtles that are better adapted to the environmental conditions of the warmer local beach. Their expected reproductive output is affected by warming but also benefits from a relative reproductive advantage specified by `sel_coeff`.
 
-New A turtles can arise through mutation from a.
-In the current code, migrants from the source/cool beach are type a turtles, not adapted type A turtles.
-The source population is treated as constant.
+New type-*A* individuals can arise through mutations from type *a*, with the probability of mutation determined by `mut_rate`.
 
-This is a simplified model.
-decay_rate represents the negative effect of warming rather than simulating ocean temperature directly.
-Migration is represented by a rate of immigration, not by explicitly modelling two different routes or route-specific mortality.
+In the current model, all immigrants arriving from the source population belong to type *a*, not type *A*. This means that immigration increases the number of non-adapted individuals in the local population. The source population does not lose individuals when it sends immigrants, and immigration occurs in one direction only, from the cooler source beach to the warmer local beach.
+
+The model is a simplified representation of these processes. The parameter `decay_rate` represents the negative effect of warming on reproductive output rather than simulating changes in ocean or sand temperature directly. Similarly, `sel_coeff` represents the relative reproductive advantage of the adapted type under the new environmental conditions. Type *A* is an abstract model type and does not represent a known mutation or a measured genetic variant in sea turtles.
+
+Migration is represented by an immigration rate rather than by explicitly modelling different migration routes, movement between habitats or route-specific mortality. Therefore, the model focuses on how the arrival of non-adapted individuals influences the persistence of the local population and the spread of the adapted type.
+
+We begin with 100 local type-*a* individuals and no type-*A* individuals. This initial condition allows us to investigate how an existing local population responds to environmental stress and whether adaptation can emerge over time. Starting with both populations at zero would mean that the scenario without immigration remains at zero from the beginning, making it impossible to investigate the decline of an initially existing population. We therefore use an initial local population of 100 individuals, consistent with the default setting in our Shiny application.
 
 # Parameters, initial conditions and variables
 
-+--------------------------------------------------------------------------+--------------------------------------------------------------------------+
-| Code                                                                     | Meaning in the Sea-Turtle Model                                          |
-+==========================================================================+==========================================================================+
-| \# Variables                                                             |                                                                          |
-+--------------------------------------------------------------------------+--------------------------------------------------------------------------+
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
-+--------------------------------------------------------------------------+--------------------------------------------------------------------------+
-| `N_a`                                                                    | Number of local turtles on the warming beach                             |
-+--------------------------------------------------------------------------+--------------------------------------------------------------------------+
-| `N_A`                                                                    | Number of adapted-type turtles on the warming beach                      |
-+--------------------------------------------------------------------------+--------------------------------------------------------------------------+
-| `decay_rate`                                                             | Negative effect of warming on expected population growth                 |
-+--------------------------------------------------------------------------+--------------------------------------------------------------------------+
-| `sel_coeff`                                                              | Relative growth advantage of the adapted type                            |
-+--------------------------------------------------------------------------+--------------------------------------------------------------------------+
-| `mut_rate`                                                               | Rate at which the adapted type arises through new mutations              |
-+--------------------------------------------------------------------------+--------------------------------------------------------------------------+
-| `mig_rate`                                                               | Rate of arrival of adapted individuals from the cooler beach             |
-+--------------------------------------------------------------------------+--------------------------------------------------------------------------+
-| `N_source_a`                                                             | Size of source/cool beach population                                     |
-+--------------------------------------------------------------------------+--------------------------------------------------------------------------+
-| `carrying_capacity`                                                      | maximum population size the warming habitat can support                  |
-+--------------------------------------------------------------------------+--------------------------------------------------------------------------+
-| ##### \# Parameters                                                      |                                                                          |
-+--------------------------------------------------------------------------+--------------------------------------------------------------------------+
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
-+--------------------------------------------------------------------------+--------------------------------------------------------------------------+
-
-# Simulate One Generation
-
-The first function calculates what happens over one generation.
-The order of events in our code is:
-
-1.  Generate offspring for both types.
-2.  If the total offspring exceeds carrying capacity, reduce the offspring numbers to the limit.
-3.  Generate mutations from type `a` to type `A` among the `a` offspring.
-4.  Generate immigrants of type `a` from the source beach.
-5.  Calculate the population sizes `a` and `A` for the next generation.
+| Code  | Meaning in the Sea-Turtle Model |
++============+============================+
+*Variables*
+| `N_a` | Number of local turtles on the warming beach|
+| `N_A` | Number of adapted-type turtles on the warming beach |
+| `decay_rate`| Negative effect of warming on expected population growth |
+| `sel_coeff` | Relative growth advantage of the adapted type |
+| `mut_rate`  | Rate at which the adapted type arises through new mutations |
+| `mig_rate`  | Rate of arrival of adapted individuals from the cooler beach |
+| `N_source_a`| Size of source/cool beach population |
+| `carrying_capacity` | maximum population size the warming habitat can support|
+*Parameters*
 
 ```{r load-parameters}
 parameter_file <- "parameters.csv"
@@ -136,6 +136,18 @@ run_scenario <- function(parameter_row) {
 }
 
 ```
+
+
+# Simulate One Generation
+
+The first function calculates what happens over one generation.
+The order of events in our code is:
+
+1.  Generate offspring for both types.
+2.  If the total offspring exceeds carrying capacity, reduce the offspring numbers to the limit.
+3.  Generate mutations from type `a` to type `A` among the `a` offspring.
+4.  Generate immigrants of type `a` from the source beach.
+5.  Calculate the population sizes `a` and `A` for the next generation.
 
 ```{r}
 # FUNCTION 1: SIMULATE ONE GENERATION
@@ -467,38 +479,6 @@ par(mar = c(5, 4, 4, 2), xpd = FALSE)
 
 ```
 
-# Total population size and frequencies
-
-```{r}
-# Calculate Frequencies
-# Calculate the total local population at each generation
-N_total <- output[, "a"] + output[, "A"]
-
-# Calculate the frequency of type a
-freq_a <- ifelse(
-  N_total > 0,
-  output[, "a"] / N_total,
-  NA
-)
-
-# Calculate the frequency of type A
-freq_A <- ifelse(
-  N_total > 0,
-  output[, "A"] / N_total,
-  NA
-)
-
-# Store the results in a data frame
-frequency_output <- data.frame(
-  Generations = 0:(nrow(output) - 1),
-  N_total = N_total,
-  freq_a = freq_a,
-  freq_A = freq_A
-)
-
-# Display the frequency results
-print(frequency_output)
-```
 
 ## Implementation in a Shiny App
 
@@ -752,6 +732,22 @@ How strong does the selection needs to be for the adapted ones to survive?
 
 # Discussion
 
-As we know that Temperatures are rising our first goal was to look at the hatchling success or failure because of higher temperatures there is more and more female hatchlings than males and this would also impact the reproduction rate and success of a reproductive event.
-Because of this sea-turtles may migrate more to find a partner in other sea-turtle populations and as temperatures are rising sea-turtles do not only have to change their migration routes but they may also have to somehow adapt as of how they would adapt woud have been very interesting to see in a model and how ressources, migration and maybe a mutation that leads to an adaptation to their changing/warming habitat and also how all this and the fact that there is less and less success of hatchlings and even when there is success feminization of the population is getting higher and higher what impact would this have in general on animals where the sex ratio is decided by the temperature.
-The Model examines whether adaptation can rescue a declining sea-turtle population and how immigration of non-adapted urtles influences population persistence and the spread of the adapted one through adaptation and imigration.
+Our model suggests that immigration can improve the persistence and demographic recovery of a local sea-turtle population exposed to warming-related environmental stress. However, the highest immigration rate does not necessarily maximise the representation of the adapted type. Because all immigrants are assumed to be non-adapted, very high immigration rates can maintain a large local population while type *A* remains rare. The most interesting outcome is therefore the difference between demographic recovery and adaptation: a population can recover in terms of size without becoming dominated by the type that is better suited to the local environmental conditions. This is a theoretical result based on the assumptions of our model and should not be interpreted as a direct prediction for wild sea-turtle populations.
+
+The initial motivation for our model was the increasing impact of rising temperatures on sea-turtle reproduction. Since temperature determines the sex of sea-turtle hatchlings, higher incubation temperatures lead to a greater proportion of female hatchlings. At the same time, increasing temperatures can reduce hatching success, meaning that fewer hatchlings successfully emerge from their nests. Together, these changes could affect the sex ratio of future populations and potentially reduce reproductive success, particularly if the number of males becomes insufficient for successful reproduction.
+
+As a consequence, sea turtles may need to move more between different populations to find suitable reproductive partners. Furthermore, as temperatures continue to rise, they may not only need to change their migration routes to reach more suitable habitats, but may also need to adapt to the changing environmental conditions. We therefore wanted to investigate how migration, available resources and possible mutations leading to adaptation could interact and influence the persistence of a population under environmental warming.
+
+An especially interesting aspect is how the combination of reduced hatching success and increasing feminisation could affect animal populations in which sex is determined by temperature. Even when reproduction is successful, a strongly female-biased sex ratio could potentially influence future reproductive events and the long-term viability of a population.
+
+Our model examines whether adaptation can rescue a declining sea-turtle population and how immigration of non-adapted individuals influences population persistence and the spread of the adapted type through mutation and selection. It shows that immigration can support demographic recovery, but does not necessarily promote local adaptation. This distinction is important because maintaining population size alone may not be sufficient to ensure the long-term survival of a population under changing environmental conditions.
+
+Future models could therefore include alternative migration routes, route-specific survival, more realistic temperature-dependent reproductive processes and changes in hatchling sex ratios. This would allow us to investigate more directly how changing temperatures, migration and adaptation interact, and whether these processes are sufficient to maintain viable sea-turtle populations under continued climate warming.
+
+# References
+
+Almpanidou, V., Markantonatou, V., & Mazaris, A. D. (2019). Thermal heterogeneity along the migration corridors of sea turtles: Implications for climate change ecology. *Journal of Experimental Marine Biology and Ecology, 520*, 151223. https://doi.org/10.1016/j.jembe.2019.151223
+
+Duquesne, E., & Fournier, D. (2025). Climate change redefines sea turtle hotspots: Vessel strike risks and gaps in protected areas. *Science Advances, 11*(26), eadw4495. https://doi.org/10.1126/sciadv.adw4495
+
+Fuentes, M. M. P. B., Santos, A. J. B., Abreu-Grobois, A., et al. (2024). Adaptation of sea turtles to climate warming: Will phenological responses be sufficient to counteract changes in reproductive output? *Global Change Biology, 30*(1), e16991. https://doi.org/10.1111/gcb.16991
