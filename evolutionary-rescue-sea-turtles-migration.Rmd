@@ -20,7 +20,7 @@ Question of this notebook: **Can gene flow from a cooler beach, where the adapte
 ## What changed compared to the basic model
 
 | Basic model | This model |
-|----|----|
+|------------------------------------|------------------------------------|
 | One population | Two nesting beaches (patches): **beach 1 = warming beach**, **beach 2 = cooler refuge beach** |
 | One decay rate `decay_rate` | Beach-specific decay rates `r1`, `r2` |
 | One selection coefficient `sel_coeff` | Beach-specific advantage of A: `s1`, `s2` (s2 can be negative = cost of the trait on a cool beach) |
