@@ -308,7 +308,7 @@ print(tail(output_table), row.names = FALSE)
 x_range <- 0:(nrow(output) - 1)
 
 # Leave space on the right for the legend
-par(mar = c(5, 4, 4, 14), xpd = NA)
+par(mar = c(5, 4, 4, 10), xpd = NA)
 
 # Total population
 plot(
@@ -330,7 +330,7 @@ lines(x_range, output[, "A"], col = "red", lwd = 2)
 legend(
   "topright",
   inset = c(-0.55, 0),
-  legend = c("Total population", "a (usual)", "A (adapted)"),
+  legend = c("Total population", "a (non-adapted)", "A (adapted)"),
   col = c("black", "darkgreen", "red"),
   lty = 1,
   lwd = 2,
@@ -343,19 +343,27 @@ par(mar = c(5, 4, 4, 2), xpd = FALSE)
 
 ```
 
+
+Effect of immigration rate on the final population size and composition. Each dot represents the final outcome of one replicate simulation (n = 100). Coloured lines and symbols indicate the mean number of adapted (A), non-adapted (a), and total (a + A) turtles across the 100 replicates. All values represent absolute numbers of turtles at generation 200, not averages across generations. The immigration rate (m) represents the probability of immigration per source individual per generation.
+
 ```{r}
+
 # PLOTS 2: EFFECT OF MIGRATION
 
 # Migration rates to compare
-migration_rates <- c(1, 10^seq(-5, 0, by = 1))
+migration_rates <- c(0, 10^seq(-5, 0, by = 1))
+
+# Expected immigrants per generation
+expected_immigrants <- 1000 * migration_rates
 
 # Repeat simulations to account for random variation
 n_replicates <- 100
 
 # Store the mean results for each migration rate
 adapted_A <- numeric(length(migration_rates))
-mig_a <- 1000 * migration_rates # Expected number of migrating turtles per generation
+mean_a <- numeric(length(migration_rates))
 population_size <- numeric(length(migration_rates))
+
 all_results <- vector("list", length(migration_rates))
 
 
@@ -367,58 +375,80 @@ for (j in seq_along(migration_rates)) {
   for (rep in seq_len(n_replicates)) {
 
     sim <- simulate_pop(
-      N_init_a = 0,
+      N_init_a = 100,
       N_init_A = 0,
       decay_rate = 0.1,
       sel_coeff = 0.2,
       mut_rate = 0.001,
-      mig_rate = migration_rates[j], 
+      mig_rate = migration_rates[j],
       N_source_a = 1000,
       t_max = max_gen,
       carrying_capacity = 1000
     )
 
-# Number of A and a turtles at the final generation
+    # Number of A and a turtles at the final generation
     results[rep, 1] <- sim[nrow(sim), "A"]
-    
+
     results[rep, 2] <- sim[nrow(sim), "a"]
-    
-# Total population at the final generation
-    results[rep, 3] <- sum(sim[nrow(sim), ])
+
+    # Total local population at the final generation
+    results[rep, 3] <- sim[nrow(sim), "A"] +
+                       sim[nrow(sim), "a"]
   }
 
-all_results[[j]] <- results
+  all_results[[j]] <- results
 
-# Calculate the mean across replicate simulations
+  # Calculate the mean across replicate simulations
   adapted_A[j] <- mean(results[, 1])
-  mig_a [j] <- mean(results[, 2])
+  mean_a[j] <- mean(results[, 2])
   population_size[j] <- mean(results[, 3])
 }
+
 
 # PLOT 2: MIGRATION VS POPULATION TYPES AND TOTAL POPULATION
 
 # Leave space on the right for the legend
-par(mar = c(5, 4, 4, 14), xpd = NA)
+par(mar = c(5, 4.5, 4, 9), xpd = NA)
 
-# Install once in the Console if needed: install.packages("beeswarm")
-if (!requireNamespace("beeswarm", quietly = TRUE)) {
-  stop('Please install beeswarm first: install.packages("beeswarm")')
-}
+# Calculate suitable Y-axis limits and intervals
+all_values <- unlist(all_results, use.names = FALSE)
+
+y_ticks <- pretty(c(0, max(all_values, na.rm = TRUE)), n = 6)
+y_ticks <- y_ticks[y_ticks >= 0]
 
 # Set up axes without drawing the mean lines yet
 matplot(
   seq_along(migration_rates),
-  cbind(adapted_A, mig_a, population_size),
-  type = "n", xaxt = "n",
+  cbind(adapted_A, mean_a, population_size),
+  type = "n",
+  xaxt = "n",
+  yaxt = "n",
   xlim = c(0.5, length(migration_rates) + 0.5),
-  ylim = range(c(0, unlist(all_results)), finite = TRUE),
-  xlab = "Migration rate",
-  ylab = "Number of turtles",
-  main = "Effect of migration on population"
+  ylim = c(0, max(y_ticks)),
+  xlab = "Expected immigrants per generation",
+  ylab = "Number of turtles at generation",
+  main = "Effect of immigration on final population size"
+)
+
+# Add X-axis labels
+axis(
+  side = 1,
+  at = seq_along(migration_rates),
+  labels = c("0", "0.01", "0.1", "1", "10", "100", "1000")
+)
+
+# Add Y-axis labels with readable intervals
+axis(
+  side = 2,
+  at = y_ticks,
+  labels = format(y_ticks, big.mark = ",",
+                  scientific = FALSE, trim = TRUE),
+  las = 1
 )
 
 # Individual final-generation outcomes, behind the mean lines
 swarm_colors <- c("red", "blue", "darkgreen")
+
 for (k in 1:3) {
   beeswarm::beeswarm(
     lapply(all_results, function(x) x[, k]),
@@ -433,27 +463,27 @@ for (k in 1:3) {
   )
 }
 
-# Original mean lines and symbols on top
+# Mean lines and symbols on top
 matlines(
   seq_along(migration_rates),
-  cbind(adapted_A, mig_a, population_size),
+  cbind(adapted_A, mean_a, population_size),
   type = "b",
   pch = c(19, 17, 15),
   col = c("red", "blue", "darkgreen"),
   lty = 1,
   lwd = 2
 )
-axis(
-  side = 1,
-  at = seq_along(migration_rates),
-  labels = expression(0, 10^{-5}, 10^{-4}, 10^{-3},
-                      10^{-2}, 10^{-1}, 10^{0})
-)
 
+# Legend
 legend(
   "topright",
-  inset = c(-0,85, 0),cex = 0.6,
-  legend = c("Adapted turtles (A)", "Migrating turtles (a)", "Total population (a + A)"),
+  inset = c(-0.55, 0),
+  cex = 0.75,
+  legend = c(
+    "Mean adapted turtles (A)",
+    "Mean non-adapted turtles (a)",
+    "Mean total population (a + A)"
+  ),
   col = c("red", "blue", "darkgreen"),
   pch = c(19, 17, 15),
   lty = 1,
@@ -462,8 +492,11 @@ legend(
   xpd = NA
 )
 
-# Restore the standard plotting margins, leave space on the right for the legend, if needed.
+# Restore standard plotting settings
 par(mar = c(5, 4, 4, 2), xpd = FALSE)
+
+```
+
 
 ```
 
@@ -473,6 +506,7 @@ par(mar = c(5, 4, 4, 2), xpd = FALSE)
 This is the same model implemented as a Shiny App.
 
 ```{r, echo=FALSE}
+
 # Check if 'shiny' package is installed, if not, install it
 if (! "shiny" %in% rownames(installed.packages())) {
   install.packages("shiny")
@@ -701,6 +735,7 @@ server <- function(input, output) {
 
 # Create the Shiny app
 shinyApp(ui = ui, server = server)
+
 ```
 
 # Questions & Answers
@@ -730,7 +765,7 @@ An especially interesting aspect is how the combination of reduced hatching succ
 
 Our model examines whether adaptation can rescue a declining sea-turtle population and how immigration of non-adapted individuals influences population persistence and the spread of the adapted type through mutation and selection. It shows that immigration can support demographic recovery, but does not necessarily promote local adaptation. This distinction is important because maintaining population size alone may not be sufficient to ensure the long-term survival of a population under changing environmental conditions.
 
-Future models could therefore include alternative migration routes, route-specific survival, more realistic temperature-dependent reproductive processes and changes in hatchling sex ratios. This would allow us to investigate more directly how changing temperatures, migration and adaptation interact, and whether these processes are sufficient to maintain viable sea-turtle populations under continued climate warming.
+Future models could therefore include alternative migration routes, route-specific survival, more realistic temperature-dependent reproductive processes and changes in hatchling sex ratios. This would allow us to investigate more directly how changing temperatures, migration and adaptation interact, and whether these processes are sufficient to maintain viable sea-turtle populations under the ongoing climate warming.
 
 # References
 
