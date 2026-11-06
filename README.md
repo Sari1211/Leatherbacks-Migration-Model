@@ -1,117 +1,93 @@
 # Sea-Turtle Migration Model
 
-A stochastic, individual-count simulation of how migration from a cooler source beach affects turtle populations on a beach affected by warming.
+A stochastic simulation of how immigration from a cooler source beach affects a sea-turtle population on a beach affected by warming.
 
-File: `Sea-Turtle_Migration-Model(beehive).Rmd`
+**Question:** How does immigration from a source population affect the demographic recovery and the establishment of an adapted type in a local sea-turtle population exposed to warming-related stress?
 
-## Model question
+## Project structure
 
-How does immigration from a source population affect the demographic recovery and the establishment of an adapted type in a local sea-turtle population exposed to warming-related stress?
+| File | What it is for |
+|--------------------|----------------------------------------------------|
+| `Final Sea-Turtle_Migration-Model(beehive).Rmd` | Model code, plots, results table and a Shiny app. |
+| `parameters.csv` | Named parameter sets (`baseline`, `high`, `medium`, `verylow`). |
+| `README.md` | This file. |
 
-## Turtle types
+## Requirements and installation
 
-| Type | Description |
-|-----------------------|------------------------------------------------|
-| `a` | Usual turtles. Arrive as immigrants from the cool beach. Their expected offspring number is reduced by `decay_rate`. |
-| `A` | Adapted turtles. Arise only through mutation from `a`. Their growth depends on `sel_coeff - decay_rate` and is density-dependent. |
+- R (≥ 4.0), RStudio recommended
+- R packages `beeswarm`, `shiny` and `shinyWidgets`, installed once with:
 
-## Assumptions
+``` r
+install.packages(c("beeswarm", "shiny", "shinyWidgets"))
+```
 
-- Warming is not modelled as temperature. `decay_rate` stands for its negative effect on reproduction.
-- Migration is a single immigration rate. Routes and route-specific mortality are not modelled.
-- All immigrants are type `a`. No adapted turtles come from the source beach.
-- The source beach population (`N_source_a`) is constant.
-- Generations do not overlap. Each generation fully replaces the previous one.
-- Births, mutations and immigrants are Poisson-distributed; trimming to carrying capacity is binomial.
+## How to run
 
-## Parameters
+1.  Put the `.Rmd` file and `parameters.csv` in the same folder.
+2.  Open that folder as an RStudio Project, or set it as the working directory with `setwd("path/to/folder")`.
+3.  Open the `.Rmd` file and click **Knit** to produce the plots and table.
+4.  To use the Shiny app, run its chunk directly in RStudio (the green ▶ button). A normal Knit creates a static document, so the app will not run there.
 
-| Parameter | Meaning | Default |
-|---------------------------|-----------------------|-----------------------|
-| `N_init_a` | Starting number of type `a` turtles on the warming beach | 1000 |
-| `N_init_A` | Starting number of type `A` turtles on the warming beach | 0 |
-| `decay_rate` | Negative effect of warming on expected offspring | 0.1 |
-| `sel_coeff` | Relative growth advantage of type `A` | 0.2 |
-| `mut_rate` | Per-offspring rate at which `a` mutates to `A` | 0.001 |
-| `mig_rate` | Fraction of the source population arriving each generation | 0 to 1 |
-| `N_source_a` | Size of the source (cool beach) population | 1000 |
-| `t_max` | Number of generations simulated | 1000 |
-| `carrying_capacity` | Maximum population the warming beach supports | 1000 |
-| `n_replicates` | Number of repeated runs per parameter set | 100 |
+The migration sweep runs 100 replicates × 1000 generations for each migration rate, so it can take a few minutes. Results are random; add `set.seed(42)` at the top for reproducible runs.
 
-All parameter sets are stored in `parameters.csv`, one scenario per row that can be used to generate different scenario.
+### Parameters and `parameters.csv`
 
-## Step by Step for Running the model !
+`parameters.csv` holds named parameter sets in a column called `parameter_set`. Choose one in the `.Rmd`:
 
-### 1 Clean the workspace
+``` r
+selected_set <- "high"   # baseline, high, medium or verylow
+```
 
-rm(list=ls())
+Note: the simulations currently use the values written directly in the `simulate_pop()` calls in the `.Rmd`. To change a scenario, edit those values.
 
-### 2 Set the directory
+## How the model works
 
-setwd() #set the directory into the location where we put our data
+**Turtle types**
 
-### 3. Installing the packages
+- `a` – usual turtles, both local ones and immigrants. Warming reduces their offspring by `decay_rate`.
+- `A` – adapted turtles. Arise only by mutation from `a`. Grow at `sel_coeff − decay_rate`, limited by space on the beach.
 
-install.packages("beeswarm")
+**One generation**
 
-### 4. Load the packages
-
-library(beeswarm)
-
-### 5 Load the data & parameters
-
-## Order of events in one generation
-
-1.  **Reproduction**
+1.  Reproduction:
     - `a` offspring \~ Poisson(`N_a × (1 − decay_rate)`)
     - `A` offspring \~ Poisson(`N_A + N_A × (sel_coeff − decay_rate) × (1 − (N_a + N_A) / K)`)
-2.  **Carrying capacity** – if total offspring \> `K`, offspring are reduced to `K` by binomial sampling.
-3.  **Mutation** – `a → A` mutations \~ Poisson(`offsp_a × mut_rate`).
-4.  **Immigration** – new `a` immigrants \~ Poisson(`N_source_a × mig_rate`).
-5.  **Update and cap** – new `N_a` and `N_A` are calculated, and carrying capacity is applied again after immigration.
+2.  If offspring exceed `K`, they are reduced to `K` by binomial sampling.
+3.  Mutation `a → A` \~ Poisson(`offsp_a × mut_rate`). Mutants move from `a` to `A`.
+4.  Immigration of `a` \~ Poisson(`N_source_a × mig_rate`).
+5.  Population is updated and capped at `K` again by binomial sampling.
 
-## Functions
+**What to expect.** The simulations start with an empty beach (`N_init_a = 0`), so without immigration the population stays at zero. With immigrants, `a` levels off near `mig_rate × N_source_a / decay_rate` (e.g. `mig_rate = 0.1` fills the beach). This creates the key trade-off: more migration keeps the population up (*demographic rescue*), but immigrants also take up space and slow the spread of `A` (*swamping*).
 
-| Function | What it does |
-|------------------------------|------------------------------------------|
-| `simulate_one_gen()` | Runs one generation and returns `c(N_a, N_A)` |
-| `simulate_pop()` | Runs `t_max` generations and returns a matrix with columns `a` and `A`, rows = generations 0 to `t_max` |
+**Parameters used in the main simulations**
+
+| Parameter | Meaning | Value |
+|-----------------------------|------------------------|-------------------|
+| `N_init_a`, `N_init_A` | Starting numbers of `a` and `A` | 0, 0 |
+| `decay_rate` | Negative effect of warming on offspring | 0.1 |
+| `sel_coeff` | Growth advantage of `A` | 0.2 |
+| `mut_rate` | Rate of `a → A` mutation per offspring | 0.001 |
+| `mig_rate` | Fraction of the source population arriving each generation | 0 (single run); 10⁻⁵ to 1 (sweep) |
+| `N_source_a` | Size of the source population (constant) | 1000 |
+| `t_max` | Number of generations | 1000 |
+| `carrying_capacity` (K) | Maximum population on the warming beach | 1000 |
+| `n_replicates` | Runs per migration rate | 100 |
 
 ## Outputs
 
-1.  **Population dynamics plot** – total, `a` and `A` over generations for one run.
-2.  **Migration effect plot** – final-generation `A`, `a` and total population across migration rates (0, 10⁻⁵ … 10⁰). Points show each replicate (beeswarm); lines show replicate means.
-3.  **Frequency table** – total population and frequencies of `a` and `A` for every generation.
+1.  **Results table** – numbers of `a` and `A` in the last six generations of the single run.
+2.  **Population dynamics plot** – total, `a` and `A` over time for the single run.
+3.  **Migration effect plot** – final `a`, `A` and total population across migration rates. Points are replicates (beeswarm); lines are means.
+4.  **Shiny app** ("Evolutionary Rescue Simulation") – an interactive, simplified version of the model. Sliders set the starting population, decline rate, selective advantage, mutation probability and number of generations. It shows population trajectories, the share of populations that rebound, and the expected rescue probability (Orr & Unckless 2014).
 
-## Running the model from `parameters.csv`
+## Assumptions and limitations
 
-``` r
-params <- read.csv("parameters.csv")
+- Warming is not modelled as temperature; `decay_rate` stands for its effect on reproduction.
+- All immigrants are type `a`; the source population is constant.
+- Generations do not overlap. No age structure, sex ratio or temperature-dependent sex determination.
+- `A` arises only by mutation, so adaptation is slow when `mut_rate` is low.
+- One generation is roughly 20–30 turtle years, so 1000 generations is a very long time span.
 
-# Single trajectory
-p <- params[params$scenario == "single_run", ]
-output <- simulate_pop(
-  N_init_a = p$N_init_a, N_init_A = p$N_init_A,
-  decay_rate = p$decay_rate, sel_coeff = p$sel_coeff,
-  mut_rate = p$mut_rate, mig_rate = p$mig_rate,
-  N_source_a = p$N_source_a, t_max = p$t_max,
-  carrying_capacity = p$carrying_capacity
-)
+## Authors and context
 
-# Migration sweep
-sweep <- params[grepl("^mig_", params$scenario), ]
-migration_rates <- sweep$mig_rate
-n_replicates   <- sweep$n_replicates[1]
-```
-
-## Requirements
-
-- R (≥ 4.0)
-- `beeswarm` package: `install.packages("beeswarm")`
-
-## Limitations
-
-- No explicit temperature, sex ratio, age structure or temperature-dependent sex determination.
-- Type `A` can only arise by mutation, so adaptation is slow when `mut_rate` is low.
-- Results are stochastic; use `set.seed()` for reproducible runs.
+Created by Fadly Muhammad and Sara Costanzo for Theoretical Ecology and Evolution, University of Bern, Fall 2026.
